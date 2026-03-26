@@ -1,77 +1,133 @@
 'use strict';
 
-// ─── Signals ──────────────────────────────────────────────────────────────────
+// ── Ratings ───────────────────────────────────────────────────────────────────
 
-const DOMAINS = [
-  { id: 'framing', label: 'Problem Framing', signals: [
-    { id: 'dr_req_first',  track: 'dr', pos: true,  label: 'Requirements first' },
-    { id: 'dr_clarified',  track: 'dr', pos: true,  label: 'Asked to clarify' },
-    { id: 'dr_jumped',     track: 'dr', pos: false, label: 'Jumped to execution' },
-    { id: 'me_gave_frame', track: 'me', pos: true,  label: 'Gave clear frame' },
-    { id: 'me_no_context', track: 'me', pos: false, label: 'No context given' },
-  ]},
-  { id: 'execution', label: 'Design Execution', signals: [
-    { id: 'dr_detail',     track: 'dr', pos: true,  label: 'Strong detail' },
-    { id: 'dr_in_frame',   track: 'dr', pos: true,  label: 'Stayed in frame' },
-    { id: 'dr_deviated',   track: 'dr', pos: false, label: 'Deviated from brief' },
-    { id: 'me_strengths',  track: 'me', pos: true,  label: 'Played to strengths' },
-    { id: 'me_open_scope', track: 'me', pos: false, label: 'Too much open scope' },
-  ]},
-  { id: 'presentation', label: 'Presentation & Reviews', signals: [
-    { id: 'dr_insight',    track: 'dr', pos: true,  label: 'Led with insight' },
-    { id: 'dr_lost_room',  track: 'dr', pos: false, label: 'Lost the room' },
-    { id: 'me_owned',      track: 'me', pos: true,  label: 'Owned the format' },
-    { id: 'me_drift',      track: 'me', pos: false, label: 'Let it drift' },
-  ]},
-  { id: 'feedback', label: 'Feedback Reception', signals: [
-    { id: 'dr_rcvd_well',  track: 'dr', pos: true,  label: 'Received it well' },
-    { id: 'dr_repeated',   track: 'dr', pos: false, label: 'Repeated the pattern' },
-    { id: 'me_direct',     track: 'me', pos: true,  label: 'Gave direct feedback' },
-    { id: 'me_softened',   track: 'me', pos: false, label: 'Over-softened it' },
-  ]},
-  { id: 'workload', label: 'Workload Management', signals: [
-    { id: 'dr_handled',    track: 'dr', pos: true,  label: 'Handled scope well' },
-    { id: 'dr_got_lost',   track: 'dr', pos: false, label: 'Got lost in complexity' },
-    { id: 'me_protected',  track: 'me', pos: true,  label: 'Protected from complexity' },
-    { id: 'me_overloaded', track: 'me', pos: false, label: 'Overloaded them' },
-  ]},
+const RATINGS = ['Not yet', 'Developing', 'Solid', 'Strong'];
+
+const RC = {
+  'Not yet':    { text: '#ff453a', bg: 'rgba(255,69,58,0.12)',   dot: '#ff453a' },
+  'Developing': { text: '#ffd60a', bg: 'rgba(255,214,10,0.12)',  dot: '#ffd60a' },
+  'Solid':      { text: '#0a84ff', bg: 'rgba(10,132,255,0.12)',  dot: '#0a84ff' },
+  'Strong':     { text: '#30d158', bg: 'rgba(48,209,88,0.12)',   dot: '#30d158' },
+};
+
+// ── Subjects ──────────────────────────────────────────────────────────────────
+
+const SUBJECTS = [
+  { id: 'dr',   role: 'Direct Report' },
+  { id: 'me',   role: '360 Self'      },
+  { id: 'pm',   role: 'PM'            },
+  { id: 'boss', role: 'Leadership'    },
 ];
 
-const ASSESSMENT_DAYS = 7;
+// ── Criteria ──────────────────────────────────────────────────────────────────
 
-// ─── State ────────────────────────────────────────────────────────────────────
+const CRITERIA = {
+  dr: [
+    { id: 'framing', area: 'Problem Framing',
+      question: 'Are they framing before executing?',
+      signals: ['Defined requirements before opening tools', 'Asked clarifying questions first', 'Stayed in problem space before proposing solutions'] },
+    { id: 'execution', area: 'Design Execution',
+      question: 'Are they executing well within given scope?',
+      signals: ['Strong attention to detail and precision', 'Stayed within the given frame', 'Delivered to brief without deviation'] },
+    { id: 'presentation', area: 'Presentation & Reviews',
+      question: 'Are they presenting work effectively?',
+      signals: ['Led with insight, not a research dump', 'Structured the narrative clearly', 'Kept the room engaged'] },
+    { id: 'feedback', area: 'Feedback Reception',
+      question: 'Are they receiving and applying feedback?',
+      signals: ['Received feedback without defensiveness', 'Applied it in the next session', 'Did not repeat the same pattern after feedback'] },
+    { id: 'workload', area: 'Workload Management',
+      question: 'Are they handling scope independently?',
+      signals: ['Handled complexity without hand-holding', 'Did not get lost in the weeds', 'Delivered without needing to be pulled back in'] },
+  ],
+
+  me: [
+    { id: 'speed', area: 'Speed & Output',
+      question: 'Am I moving fast enough?',
+      signals: ['Design is ahead of tech delivery', 'Features move to dev-ready without delays', 'I prototype fast instead of over-researching'] },
+    { id: 'process', area: 'Process Ownership',
+      question: 'Am I running reviews with structure?',
+      signals: ['I set the agenda before every review', 'I come with a point of view, not just an update', 'Every review ends with one decision made'] },
+    { id: 'proactive', area: 'Proactiveness',
+      question: 'Am I driving the work or waiting to be told?',
+      signals: ['I identify what the team needs before they ask', 'I kick off features with clear framing', 'I do not wait for a complete brief before acting'] },
+    { id: 'clarity', area: 'Demanding Clarity',
+      question: 'Am I naming blockers and demanding inputs?',
+      signals: ['I flag blockers out loud, not silently absorb them', 'Design does not start without user stories', 'I tell stakeholders directly what I need'] },
+    { id: 'dr_read', area: 'Direct Report Verdict',
+      question: 'Do I have a clear read on my direct report?',
+      signals: ['I give direct, honest feedback without softening it', 'I lead by example in sessions they attend', 'I can give leadership a clear growing or not verdict'] },
+    { id: 'challenge', area: 'Product Challenge',
+      question: 'Am I pushing back when something is off?',
+      signals: ['I use experience to question the thinking', 'I name when something does not make sense', 'I challenge scope before committing to designing'] },
+    { id: 'stakeholders', area: 'Right Stakeholders',
+      question: 'Am I using the right people for the right things?',
+      signals: ['Domain questions go to domain experts', 'Systems questions go to the systems lead', 'I only pull leadership in for decisions, not context'] },
+    { id: 'lines', area: 'Blurred Lines',
+      question: 'Am I clear on where design ends and product starts?',
+      signals: ['I name when something is a product call vs a design call', 'I do not absorb product work without flagging it', 'I empower my direct report based on their strengths'] },
+  ],
+
+  pm: [
+    { id: 'briefs', area: 'Brief Quality',
+      question: 'Are briefs clear and complete before design starts?',
+      signals: ['User stories delivered before design opens', 'Requirements are specific and actionable', 'Scope is defined, not open-ended'] },
+    { id: 'timing', area: 'Timeliness',
+      question: 'Are inputs arriving when needed?',
+      signals: ['No design delays caused by missing PM inputs', 'Deadlines respected on their side', 'Advance notice given when things change'] },
+    { id: 'unblocking', area: 'Unblocking',
+      question: 'Are they removing blockers quickly?',
+      signals: ['Responds to questions same day', 'Does not leave design stuck waiting', 'Gets decisions made without escalation'] },
+    { id: 'priority', area: 'Prioritisation',
+      question: 'Are priorities clear and stable?',
+      signals: ['Clear on what is next and why', 'No sudden switches without explanation', 'Team is aligned on the roadmap'] },
+    { id: 'pm_align', area: 'Alignment',
+      question: 'Are PM and design in sync?',
+      signals: ['No scope creep introduced without flagging', 'Decisions are documented and shared', 'Shows up to reviews prepared'] },
+  ],
+
+  boss: [
+    { id: 'expectations', area: 'Clarity of Expectations',
+      question: 'Do I know what is expected of me?',
+      signals: ['Feedback is specific and actionable', 'I know how I am being assessed', 'I am not guessing what good looks like'] },
+    { id: 'feedback_q', area: 'Quality of Feedback',
+      question: 'Is feedback useful and direct?',
+      signals: ['Feedback names the actual issue, not a symptom', 'I can act on it immediately', 'It is honest, not softened to disappear'] },
+    { id: 'decisions', area: 'Decision Support',
+      question: 'Are decisions being made when needed?',
+      signals: ['I am not stuck waiting for a call from leadership', 'Direction is given once and clearly', 'Ambiguity is resolved, not parked'] },
+    { id: 'access', area: 'Access & Availability',
+      question: 'Can I get time with leadership when needed?',
+      signals: ['I can raise a concern and get a response', 'I am not blocked by unavailability', 'Context is given proactively, not after the fact'] },
+    { id: 'strategic', area: 'Strategic Alignment',
+      question: 'Are we on the same page about direction?',
+      signals: ['I understand the bigger picture they are working in', 'No surprise pivots without context', 'I feel informed enough to make calls independently'] },
+  ],
+};
+
+// ── State ─────────────────────────────────────────────────────────────────────
 
 const state = {
   view: 'lock',
   data: null,
-  draft: null,
-  step: 0,
+  draft: null,   // { subject, ratings: {areaId: rating}, note, expanded: id|null }
+  reportTab: 'dr',
 };
 
-// ─── Auth ─────────────────────────────────────────────────────────────────────
+// ── Auth ──────────────────────────────────────────────────────────────────────
 
 async function hashPin(pin) {
-  const buf = await crypto.subtle.digest(
-    'SHA-256', new TextEncoder().encode('log-v1-' + pin)
-  );
-  return Array.from(new Uint8Array(buf))
-    .map(b => b.toString(16).padStart(2, '0')).join('');
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('log-v1-' + pin));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
-
-async function savePin(pin) {
-  localStorage.setItem('pin_hash', await hashPin(pin));
-}
-
+async function savePin(pin) { localStorage.setItem('pin_hash', await hashPin(pin)); }
 async function checkPin(pin) {
-  const stored = localStorage.getItem('pin_hash');
-  return !!stored && stored === await hashPin(pin);
+  const s = localStorage.getItem('pin_hash');
+  return !!s && s === await hashPin(pin);
 }
+function isSetup() { return !!localStorage.getItem('pin_hash') && !!localStorage.getItem('gh_token'); }
 
-function isSetup() {
-  return !!localStorage.getItem('pin_hash') && !!localStorage.getItem('gh_token');
-}
-
-// ─── GitHub API ───────────────────────────────────────────────────────────────
+// ── GitHub ────────────────────────────────────────────────────────────────────
 
 function ghHeaders() {
   return {
@@ -80,46 +136,38 @@ function ghHeaders() {
     'Accept': 'application/vnd.github.v3+json',
   };
 }
-
-function ghRepo() {
-  return localStorage.getItem('gh_repo') || 'berto-play/berto-log-data';
-}
+function ghRepo() { return localStorage.getItem('gh_repo') || 'berto-play/berto-log-data'; }
 
 async function ghRead() {
-  const res = await fetch(
-    `https://api.github.com/repos/${ghRepo()}/contents/data.json`,
-    { headers: ghHeaders() }
-  );
+  const res = await fetch(`https://api.github.com/repos/${ghRepo()}/contents/data.json`, { headers: ghHeaders() });
   if (res.status === 404) return { data: null, sha: null };
   if (!res.ok) throw new Error('GitHub read failed: ' + res.status);
   const file = await res.json();
-  const raw = decodeURIComponent(escape(atob(file.content.replace(/\n/g, ''))));
-  return { data: JSON.parse(raw), sha: file.sha };
+  return { data: JSON.parse(decodeURIComponent(escape(atob(file.content.replace(/\n/g, ''))))), sha: file.sha };
 }
 
 async function ghWrite(data, sha) {
-  const content = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2))));
-  const body = { message: 'log update', content };
+  const body = { message: 'log update', content: btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2)))) };
   if (sha) body.sha = sha;
-
-  const res = await fetch(
-    `https://api.github.com/repos/${ghRepo()}/contents/data.json`,
-    { method: 'PUT', headers: ghHeaders(), body: JSON.stringify(body) }
-  );
+  const res = await fetch(`https://api.github.com/repos/${ghRepo()}/contents/data.json`,
+    { method: 'PUT', headers: ghHeaders(), body: JSON.stringify(body) });
   if (!res.ok) throw new Error('GitHub write failed: ' + res.status);
   const result = await res.json();
   localStorage.setItem('gh_sha', result.content.sha);
 }
 
-// ─── Data ─────────────────────────────────────────────────────────────────────
+// ── Data ──────────────────────────────────────────────────────────────────────
+
+function getLabels() {
+  try { return JSON.parse(localStorage.getItem('labels') || '{}'); } catch { return {}; }
+}
+
+function subjectLabel(id) {
+  return getLabels()[id] || SUBJECTS.find(s => s.id === id)?.role || id;
+}
 
 function emptyData() {
-  return {
-    config: { startDate: new Date().toISOString().split('T')[0] },
-    interactions: [],
-    manualVerdict: null,
-    pendingSync: false,
-  };
+  return { sessions: [], pendingSync: false };
 }
 
 async function loadData() {
@@ -127,8 +175,10 @@ async function loadData() {
     const { data, sha } = await ghRead();
     if (data) {
       if (sha) localStorage.setItem('gh_sha', sha);
-      localStorage.setItem('data', JSON.stringify(data));
-      return data;
+      // migrate old format
+      const normalised = data.sessions ? data : { sessions: [], pendingSync: false };
+      localStorage.setItem('data', JSON.stringify(normalised));
+      return normalised;
     }
     const fresh = emptyData();
     await ghWrite(fresh, null);
@@ -136,15 +186,18 @@ async function loadData() {
     return fresh;
   } catch {
     const local = localStorage.getItem('data');
-    return local ? JSON.parse(local) : emptyData();
+    if (local) {
+      const parsed = JSON.parse(local);
+      return parsed.sessions ? parsed : emptyData();
+    }
+    return emptyData();
   }
 }
 
 async function saveData(data) {
   localStorage.setItem('data', JSON.stringify(data));
   try {
-    const sha = localStorage.getItem('gh_sha');
-    await ghWrite(data, sha);
+    await ghWrite(data, localStorage.getItem('gh_sha'));
     data.pendingSync = false;
     localStorage.setItem('data', JSON.stringify(data));
   } catch {
@@ -153,23 +206,17 @@ async function saveData(data) {
   }
 }
 
-// ─── Verdict ──────────────────────────────────────────────────────────────────
+// ── Stats ─────────────────────────────────────────────────────────────────────
 
-function calcVerdict(interactions) {
-  let pos = 0, neg = 0;
-  interactions.forEach(i =>
-    i.entries.forEach(e =>
-      e.signals.forEach(sid => {
-        const domain = DOMAINS.find(d => d.id === e.domain);
-        const sig = domain && domain.signals.find(s => s.id === sid);
-        if (sig && sig.track === 'dr') sig.pos ? pos++ : neg++;
-      })
-    )
-  );
-  const total = pos + neg;
-  if (total < 3) return null;
-  const r = pos / total;
-  return r >= 0.65 ? 'growing' : r <= 0.35 ? 'flag' : 'not_sure';
+function daysLogged(sessions) {
+  return new Set(sessions.map(s => s.date)).size;
+}
+
+function calcVerdict(ratings) {
+  const vals = Object.values(ratings).filter(Boolean);
+  if (vals.length < 2) return null;
+  const avg = vals.reduce((sum, r) => sum + RATINGS.indexOf(r), 0) / vals.length;
+  return avg >= 2.0 ? 'growing' : avg >= 1.0 ? 'not_sure' : 'flag';
 }
 
 function verdictLabel(v) {
@@ -180,98 +227,99 @@ function verdictColor(v) {
   return { growing: 'var(--green)', not_sure: 'var(--yellow)', flag: 'var(--red)' }[v] || 'var(--text2)';
 }
 
-function dayProgress(startDate) {
-  const day = Math.min(
-    Math.floor((Date.now() - new Date(startDate + 'T00:00:00')) / 86400000) + 1,
-    ASSESSMENT_DAYS
-  );
-  return { day, pct: Math.round((day / ASSESSMENT_DAYS) * 100) };
+function latestSession(sessions, subjectId) {
+  return [...sessions].reverse().find(s => s.subject === subjectId) || null;
 }
 
-// ─── Report ───────────────────────────────────────────────────────────────────
+function patternByArea(sessions, subjectId) {
+  const counts = {};
+  sessions.filter(s => s.subject === subjectId).forEach(s => {
+    Object.entries(s.ratings).forEach(([area, rating]) => {
+      if (!rating) return;
+      if (!counts[area]) counts[area] = {};
+      counts[area][rating] = (counts[area][rating] || 0) + 1;
+    });
+  });
+  const dominant = {};
+  Object.entries(counts).forEach(([area, tally]) => {
+    dominant[area] = Object.entries(tally).sort((a, b) => b[1] - a[1])[0][0];
+  });
+  return dominant;
+}
 
-function buildReport(data) {
-  const drByDomain = {}, meByDomain = {};
-  DOMAINS.forEach(d => {
-    drByDomain[d.id] = { pos: [], neg: [] };
-    meByDomain[d.id] = { pos: [], neg: [] };
+// ── Report ────────────────────────────────────────────────────────────────────
+
+function buildDiscussionGuide(data, subjectId) {
+  const label    = subjectLabel(subjectId);
+  const sessions = data.sessions.filter(s => s.subject === subjectId);
+  const latest   = latestSession(data.sessions, subjectId);
+  const pattern  = patternByArea(data.sessions, subjectId);
+  const criteria = CRITERIA[subjectId];
+  const verdict  = latest ? calcVerdict(latest.ratings) : null;
+
+  let t = '';
+  t += `Subject: ${label} (${SUBJECTS.find(s => s.id === subjectId)?.role})\n`;
+  t += `Sessions logged: ${sessions.length} across ${new Set(sessions.map(s => s.date)).size} days\n\n`;
+
+  if (subjectId === 'dr') {
+    t += `Verdict: ${verdictLabel(verdict)}\n`;
+    t += `Here is what I am seeing, right?\n\n`;
+  } else if (subjectId === 'me') {
+    t += `Self-assessment against expectations:\n\n`;
+  } else if (subjectId === 'pm') {
+    t += `Accountability record:\n\n`;
+  } else {
+    t += `Leadership relationship:\n\n`;
+  }
+
+  criteria.forEach(c => {
+    const dominant = pattern[c.id];
+    if (!dominant) return;
+    const trend = dominant === 'Strong' || dominant === 'Solid' ? '↑' : dominant === 'Not yet' ? '↓' : '→';
+    t += `${trend} ${c.area}: ${dominant}`;
+    if (latest?.ratings[c.id] && latest.ratings[c.id] !== dominant) {
+      t += ` (last session: ${latest.ratings[c.id]})`;
+    }
+    t += '\n';
   });
 
-  data.interactions.forEach(i =>
-    i.entries.forEach(e =>
-      e.signals.forEach(sid => {
-        const domain = DOMAINS.find(d => d.id === e.domain);
-        const sig = domain && domain.signals.find(s => s.id === sid);
-        if (!sig) return;
-        const target = sig.track === 'dr' ? drByDomain : meByDomain;
-        sig.pos ? target[e.domain].pos.push(sig.label) : target[e.domain].neg.push(sig.label);
-      })
-    )
-  );
+  if (latest?.note) t += `\nNote: ${latest.note}`;
 
-  const domainLines = DOMAINS.map(d => {
-    const dr = drByDomain[d.id];
-    const total = dr.pos.length + dr.neg.length;
-    if (!total) return null;
-    const r = dr.pos.length / total;
-    let line;
-    if (r >= 0.7)       line = `Mostly strong — ${[...new Set(dr.pos)][0]}.`;
-    else if (r <= 0.3)  line = `Consistent gap — ${[...new Set(dr.neg)][0]}.`;
-    else                line = `Mixed — ${[...new Set(dr.pos)][0] || 'some positives'}, but ${[...new Set(dr.neg)][0] || 'some gaps'}.`;
-    return `${d.label}: ${line}`;
-  }).filter(Boolean);
-
-  const meDid  = [...new Set(DOMAINS.flatMap(d => meByDomain[d.id].pos))].slice(0, 3);
-  const meFell = [...new Set(DOMAINS.flatMap(d => meByDomain[d.id].neg))].slice(0, 2);
-
-  const suggested = calcVerdict(data.interactions);
-  const verdict   = data.manualVerdict || suggested;
-  const { day }   = dayProgress(data.config.startDate);
-
-  return { verdict, suggested, day, domainLines, meDid, meFell };
-}
-
-function formatReport(data) {
-  const r = buildReport(data);
-  let t = '';
-  t += `Verdict on Direct Report: ${verdictLabel(r.verdict)}\n`;
-  t += `Here is what I am seeing, right?\n\n`;
-
-  if (r.domainLines.length) {
-    t += r.domainLines.join('\n') + '\n';
-  } else {
-    t += `[Not enough data yet — ${r.day} of ${ASSESSMENT_DAYS} days logged]\n`;
+  if (subjectId === 'dr' || subjectId === 'me') {
+    t += '\n\nWhat I need from you: [add your ask before this conversation]';
+    t += '\nOne thing I am not sure about yet: [name the gap before sharing]';
   }
 
-  t += `\nOn my side:\n`;
-  if (r.meDid.length) r.meDid.forEach(l => { t += `  • ${l}\n`; });
-  else t += `  • [Not enough data yet]\n`;
-
-  if (r.meFell.length) {
-    t += `\nWhere I fell short:\n`;
-    r.meFell.forEach(l => { t += `  • ${l}\n`; });
+  if (subjectId === 'pm') {
+    const gaps = criteria.filter(c => pattern[c.id] === 'Not yet' || pattern[c.id] === 'Developing').map(c => c.area);
+    if (gaps.length) t += `\n\nConsistent gaps: ${gaps.join(', ')}`;
   }
 
-  t += `\nWhat I need from you: [add your ask before this conversation]`;
-  t += `\n\nOne thing I am not sure about yet: [name the gap before sharing]`;
   return t;
 }
 
-// ─── Render helpers ───────────────────────────────────────────────────────────
+// ── Export ────────────────────────────────────────────────────────────────────
 
-function app() { return document.getElementById('app'); }
-
-function render(html) { app().innerHTML = html; }
-
-function esc(str) {
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+function downloadReport(text, subjectId) {
+  const date  = new Date().toISOString().split('T')[0];
+  const label = subjectLabel(subjectId).toLowerCase().replace(/\s+/g, '-');
+  const blob  = new Blob([text], { type: 'text/plain' });
+  const url   = URL.createObjectURL(blob);
+  const a     = document.createElement('a');
+  a.href      = url;
+  a.download  = `log-${label}-${date}.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
-// ─── Views ────────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function render(html) { document.getElementById('app').innerHTML = html; }
+
+// ── Views ─────────────────────────────────────────────────────────────────────
 
 function viewSetup() {
   render(`
@@ -285,19 +333,30 @@ function viewSetup() {
         <input type="password" inputmode="numeric" maxlength="4" id="pin1" placeholder="••••" autocomplete="new-password">
         <label>Confirm PIN</label>
         <input type="password" inputmode="numeric" maxlength="4" id="pin2" placeholder="••••" autocomplete="new-password">
-        <label>GitHub token</label>
+
+        <div class="form-divider">Code names</div>
+        <p class="field-hint">Use code names — these are stored privately, never in the public code.</p>
+        ${SUBJECTS.map(s => `
+          <label>${s.role}</label>
+          <input type="text" id="label_${s.id}" placeholder="e.g. ${defaultCodeName(s.id)}" autocomplete="off" spellcheck="false">
+        `).join('')}
+
+        <div class="form-divider">GitHub sync</div>
+        <label>Personal access token</label>
         <input type="password" id="gh_token" placeholder="ghp_… or github_pat_…" autocomplete="off">
-        <p class="field-hint">
-          github.com → Settings → Developer settings → Personal access tokens → Fine-grained.
-          Grant read &amp; write on Contents for your data repo.
-        </p>
+        <p class="field-hint">github.com → Settings → Developer settings → Fine-grained tokens. Grant read &amp; write Contents on your data repo.</p>
         <label>Data repo (owner/name)</label>
         <input type="text" id="gh_repo" value="berto-play/berto-log-data" autocomplete="off" spellcheck="false">
+
         <p id="setup-error" class="error hidden"></p>
         <button class="btn-primary" id="setup-btn" onclick="doSetup()">Get started</button>
       </div>
     </div>
   `);
+}
+
+function defaultCodeName(id) {
+  return { dr: 'Alpha', me: 'Self', pm: 'Charlie', boss: 'Eagle' }[id] || id;
 }
 
 function viewLock() {
@@ -309,9 +368,9 @@ function viewLock() {
       </div>
       <p id="lock-error" class="error hidden">Wrong PIN — try again</p>
       <div class="numpad">
-        ${[1,2,3,4,5,6,7,8,9,'',0,'⌫'].map(k => `
-          <button class="key${k === '' ? ' invisible' : ''}" onclick="pinKey('${k}')">${k}</button>
-        `).join('')}
+        ${[1,2,3,4,5,6,7,8,9,'',0,'⌫'].map(k =>
+          `<button class="key${k==='' ? ' invisible' : ''}" onclick="pinKey('${k}')">${k}</button>`
+        ).join('')}
       </div>
     </div>
   `);
@@ -319,25 +378,38 @@ function viewLock() {
 }
 
 function viewHome(data) {
-  const { day, pct } = dayProgress(data.config.startDate);
-  const verdict = data.manualVerdict || calcVerdict(data.interactions);
-  const todayStr = new Date().toISOString().split('T')[0];
-  const loggedToday = data.interactions.some(i => i.date === todayStr);
+  const days     = daysLogged(data.sessions);
+  const labels   = getLabels();
 
   render(`
     <div class="screen home">
       <div class="home-header">
-        <span class="day-badge">Day ${day} of ${ASSESSMENT_DAYS}</span>
-        ${data.pendingSync ? '<span class="sync-badge">⬆ pending sync</span>' : ''}
+        <div class="logo-sm">Log</div>
+        <span class="days-badge">${days} day${days !== 1 ? 's' : ''} logged</span>
+        ${data.pendingSync ? '<span class="sync-badge">⬆ pending</span>' : ''}
       </div>
-      <div class="verdict-card">
-        <div class="verdict-label" style="color:${verdictColor(verdict)}">${verdictLabel(verdict)}</div>
-        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
-        <p class="progress-text">${data.interactions.length} interaction${data.interactions.length !== 1 ? 's' : ''} logged</p>
+
+      <div class="subject-list">
+        ${SUBJECTS.map(s => {
+          const latest  = latestSession(data.sessions, s.id);
+          const verdict = latest ? calcVerdict(latest.ratings) : null;
+          const count   = data.sessions.filter(x => x.subject === s.id).length;
+          const label   = labels[s.id] || defaultCodeName(s.id);
+          return `
+            <div class="subject-card" onclick="startAssess('${s.id}')">
+              <div class="subject-card-left">
+                <div class="subject-role">${esc(s.role)}</div>
+                <div class="subject-name">${esc(label)}</div>
+                <div class="subject-meta">${count} session${count !== 1 ? 's' : ''}${latest ? ' · ' + latest.date : ''}</div>
+              </div>
+              <div class="subject-card-right">
+                ${verdict ? `<div class="verdict-chip" style="color:${verdictColor(verdict)};border-color:${verdictColor(verdict)}">${verdictLabel(verdict)}</div>` : '<div class="verdict-chip muted">No data</div>'}
+                <div class="add-btn">＋</div>
+              </div>
+            </div>`;
+        }).join('')}
       </div>
-      <button class="btn-primary log-btn" onclick="startLog()">
-        ${loggedToday ? '＋ Log another' : '＋ Log today'}
-      </button>
+
       <nav class="bottom-nav">
         <button class="nav-btn active">Home</button>
         <button class="nav-btn" onclick="goHistory()">History</button>
@@ -347,122 +419,100 @@ function viewHome(data) {
   `);
 }
 
-function viewLog() {
-  const { draft, step } = state;
+function viewAssess(subjectId) {
+  const { draft } = state;
+  const criteria  = CRITERIA[subjectId];
+  const label     = subjectLabel(subjectId);
+  const rated     = Object.values(draft.ratings).filter(Boolean).length;
+  const pct       = Math.round((rated / criteria.length) * 100);
 
-  if (step === 0) {
-    render(`
-      <div class="screen log">
-        <div class="log-header">
-          <button class="back-btn" onclick="goHome()">←</button>
-          <span>Log interaction</span>
-        </div>
-        <p class="step-label">Who are you logging for?</p>
-        <div class="choice-list">
-          <button class="choice-btn ${draft.track === 'dr'   ? 'active' : ''}" onclick="setTrack('dr')">
-            <strong>Direct Report</strong><span>Their signals</span>
-          </button>
-          <button class="choice-btn ${draft.track === 'me'   ? 'active' : ''}" onclick="setTrack('me')">
-            <strong>Me</strong><span>My management</span>
-          </button>
-          <button class="choice-btn ${draft.track === 'both' ? 'active' : ''}" onclick="setTrack('both')">
-            <strong>Both</strong><span>Log signals for both</span>
-          </button>
-        </div>
-        <button class="btn-primary${!draft.track ? ' disabled' : ''}" ${!draft.track ? 'disabled' : ''} onclick="nextStep()">Next</button>
-      </div>
-    `);
-    return;
-  }
-
-  if (step === 1) {
-    render(`
-      <div class="screen log">
-        <div class="log-header">
-          <button class="back-btn" onclick="prevStep()">←</button>
-          <span>What came up?</span>
-        </div>
-        <p class="step-label">Select all that apply</p>
-        <div class="domain-list">
-          ${DOMAINS.map(d => `
-            <button class="domain-btn${draft.domains.includes(d.id) ? ' active' : ''}" onclick="toggleDomain('${d.id}')">
-              ${esc(d.label)}
-            </button>
-          `).join('')}
-        </div>
-        <button class="btn-primary${!draft.domains.length ? ' disabled' : ''}" ${!draft.domains.length ? 'disabled' : ''} onclick="nextStep()">Next</button>
-      </div>
-    `);
-    return;
-  }
-
-  const domainIndex = step - 2;
-  if (domainIndex < draft.domains.length) {
-    const domainId = draft.domains[domainIndex];
-    const domain   = DOMAINS.find(d => d.id === domainId);
-    const signals  = domain.signals.filter(s => draft.track === 'both' || s.track === draft.track);
-    const entry    = draft.entries.find(e => e.domain === domainId) || { signals: [] };
-    const isLast   = domainIndex === draft.domains.length - 1;
-
-    render(`
-      <div class="screen log">
-        <div class="log-header">
-          <button class="back-btn" onclick="prevStep()">←</button>
-          <span>${esc(domain.label)}</span>
-        </div>
-        <p class="step-label">Tap what happened</p>
-        <div class="signal-list">
-          ${signals.map(s => `
-            <button class="signal-btn ${s.pos ? 'pos' : 'neg'}${entry.signals.includes(s.id) ? ' active' : ''}"
-              onclick="toggleSignal('${domainId}','${s.id}')">
-              <span class="signal-icon">${s.pos ? '↑' : '↓'}</span>
-              ${esc(s.label)}
-              ${draft.track === 'both' ? `<span class="signal-track">${s.track === 'dr' ? 'them' : 'me'}</span>` : ''}
-            </button>
-          `).join('')}
-        </div>
-        <button class="btn-primary" onclick="nextStep()">${isLast ? 'Add note' : 'Next domain'}</button>
-      </div>
-    `);
-    return;
-  }
-
-  // Note step
   render(`
-    <div class="screen log">
-      <div class="log-header">
-        <button class="back-btn" onclick="prevStep()">←</button>
-        <span>Any notes?</span>
+    <div class="screen assess">
+      <div class="screen-header">
+        <button class="back-btn" onclick="goHome()">←</button>
+        <div>
+          <div style="font-size:13px;color:var(--text2)">${esc(SUBJECTS.find(s=>s.id===subjectId)?.role)}</div>
+          <div style="font-weight:700">${esc(label)}</div>
+        </div>
       </div>
-      <p class="step-label muted">Optional — one line</p>
-      <textarea id="log-note" class="note-input" maxlength="200"
-        placeholder="e.g. caught herself and reframed mid-session">${esc(draft.note || '')}</textarea>
+
+      ${rated > 0 ? `
+        <div class="progress-row">
+          <span class="muted small">${rated} of ${criteria.length} rated</span>
+          <span class="muted small">${pct}%</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+      ` : ''}
+
+      <div class="accordion-list">
+        ${criteria.map(c => {
+          const rating  = draft.ratings[c.id];
+          const isOpen  = draft.expanded === c.id;
+          const col     = rating ? RC[rating] : null;
+          return `
+            <div class="accordion-card${isOpen ? ' open' : ''}">
+              <button class="accordion-head" onclick="toggleCard('${c.id}')">
+                <span class="area-dot" style="background:${col ? col.dot : 'var(--border)'}"></span>
+                <div class="area-text">
+                  <span class="area-name">${esc(c.area)}</span>
+                  <span class="area-q">${esc(c.question)}</span>
+                </div>
+                ${rating ? `<span class="area-rating" style="color:${col.text};background:${col.bg}">${esc(rating)}</span>` : ''}
+                <span class="chevron">${isOpen ? '▲' : '▼'}</span>
+              </button>
+              <div class="accordion-body">
+                <p class="signals-label">Signals</p>
+                <ul class="signals-list">
+                  ${c.signals.map(s => `<li>→ ${esc(s)}</li>`).join('')}
+                </ul>
+                <p class="signals-label">Rate</p>
+                <div class="rating-grid">
+                  ${RATINGS.map(r => {
+                    const active = rating === r;
+                    const rc = RC[r];
+                    return `<button class="rating-btn${active ? ' active' : ''}"
+                      style="${active ? `color:${rc.text};background:${rc.bg};border-color:${rc.text}` : ''}"
+                      onclick="rateArea('${subjectId}','${c.id}','${r}')">${esc(r)}</button>`;
+                  }).join('')}
+                </div>
+              </div>
+            </div>`;
+        }).join('')}
+      </div>
+
+      <textarea id="assess-note" class="note-input" maxlength="200"
+        placeholder="Optional note — one line">${esc(draft.note || '')}</textarea>
       <p id="save-error" class="error hidden"></p>
-      <button class="btn-primary" id="save-btn" onclick="saveLog()">Save interaction</button>
+      <button class="btn-primary${rated === 0 ? ' disabled' : ''}" ${rated === 0 ? 'disabled' : ''}
+        id="save-btn" onclick="saveAssess('${subjectId}')">Save session</button>
     </div>
   `);
 }
 
 function viewHistory(data) {
   const grouped = {};
-  [...data.interactions].reverse().forEach(i => {
-    if (!grouped[i.date]) grouped[i.date] = [];
-    grouped[i.date].push(i);
+  [...data.sessions].reverse().forEach(s => {
+    if (!grouped[s.date]) grouped[s.date] = [];
+    grouped[s.date].push(s);
   });
 
   const rows = Object.entries(grouped).map(([date, items]) => {
-    const label = new Date(date + 'T12:00:00')
-      .toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric' });
+    const label = new Date(date + 'T12:00:00').toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric' });
     return `
       <div class="history-day">
         <div class="history-date">${label}</div>
-        ${items.map(i => {
-          const count = i.entries.reduce((n, e) => n + e.signals.length, 0);
+        ${items.map(s => {
+          const rated   = Object.values(s.ratings).filter(Boolean).length;
+          const verdict = calcVerdict(s.ratings);
+          const subj    = SUBJECTS.find(x => x.id === s.subject);
           return `
             <div class="history-item">
-              <span class="track-badge ${i.track}">${i.track === 'dr' ? 'Them' : i.track === 'me' ? 'Me' : 'Both'}</span>
-              <span class="signal-count">${count} signal${count !== 1 ? 's' : ''}</span>
-              ${i.note ? `<span class="history-note">${esc(i.note)}</span>` : ''}
+              <span class="role-badge">${esc(subj?.role || s.subject)}</span>
+              <span class="hist-name">${esc(subjectLabel(s.subject))}</span>
+              ${verdict ? `<span class="hist-verdict" style="color:${verdictColor(verdict)}">${verdictLabel(verdict)}</span>` : ''}
+              <span class="hist-count muted">${rated} area${rated !== 1 ? 's' : ''}</span>
+              <button class="delete-btn" onclick="deleteSession('${s.id}')" title="Delete">✕</button>
+              ${s.note ? `<span class="hist-note">${esc(s.note)}</span>` : ''}
             </div>`;
         }).join('')}
       </div>`;
@@ -475,7 +525,7 @@ function viewHistory(data) {
         <span>History</span>
       </div>
       <div class="history-list">
-        ${rows || '<p class="empty">No interactions logged yet.</p>'}
+        ${rows || '<p class="empty">No sessions logged yet.</p>'}
       </div>
       <nav class="bottom-nav">
         <button class="nav-btn" onclick="goHome()">Home</button>
@@ -487,9 +537,10 @@ function viewHistory(data) {
 }
 
 function viewReport(data) {
-  const r        = buildReport(data);
-  const text     = formatReport(data);
-  const suggested = calcVerdict(data.interactions);
+  const tab      = state.reportTab;
+  const text     = buildDiscussionGuide(data, tab);
+  const latest   = latestSession(data.sessions, tab);
+  const verdict  = latest ? calcVerdict(latest.ratings) : null;
 
   render(`
     <div class="screen report">
@@ -497,23 +548,27 @@ function viewReport(data) {
         <button class="back-btn" onclick="goHome()">←</button>
         <span>Report</span>
       </div>
-      <div class="report-verdict">
-        <p class="muted small">Day ${r.day} of ${ASSESSMENT_DAYS} · App suggestion</p>
-        <div class="verdict-large" style="color:${verdictColor(suggested)}">${verdictLabel(suggested)}</div>
-        <p class="muted small">Your verdict</p>
-        <div class="verdict-picker">
-          ${['growing','not_sure','flag'].map(v => {
-            const active = (data.manualVerdict || suggested) === v;
-            return `<button class="verdict-option${active ? ' active' : ''}"
-              style="${active ? `color:${verdictColor(v)};border-color:${verdictColor(v)}` : ''}"
-              onclick="setVerdict('${v}')">${verdictLabel(v)}</button>`;
-          }).join('')}
-        </div>
+
+      <div class="report-tabs">
+        ${SUBJECTS.map(s => `
+          <button class="report-tab${tab === s.id ? ' active' : ''}" onclick="switchTab('${s.id}')">
+            ${esc(s.role.split(' ')[0])}
+          </button>`).join('')}
       </div>
-      <div class="report-body">
-        <pre id="report-text" class="report-text">${esc(text)}</pre>
+
+      <div class="report-subject">
+        <span class="report-name">${esc(subjectLabel(tab))}</span>
+        ${verdict ? `<span class="verdict-chip" style="color:${verdictColor(verdict)};border-color:${verdictColor(verdict)}">${verdictLabel(verdict)}</span>` : ''}
       </div>
-      <button class="btn-secondary" onclick="copyReport()">Copy discussion guide</button>
+
+      <pre id="report-text" class="report-text">${esc(text)}</pre>
+
+      <div class="export-row">
+        <button class="btn-secondary" onclick="doCopy()">Copy</button>
+        <button class="btn-secondary" onclick="doDownload()">Download .txt</button>
+      </div>
+      <button class="btn-danger" style="width:100%;margin-top:8px" onclick="wipeData()">Wipe all data</button>
+
       <nav class="bottom-nav">
         <button class="nav-btn" onclick="goHome()">Home</button>
         <button class="nav-btn" onclick="goHistory()">History</button>
@@ -523,7 +578,7 @@ function viewReport(data) {
   `);
 }
 
-// ─── Actions ──────────────────────────────────────────────────────────────────
+// ── Actions ───────────────────────────────────────────────────────────────────
 
 async function doSetup() {
   const pin1  = document.getElementById('pin1').value.trim();
@@ -535,10 +590,16 @@ async function doSetup() {
 
   function showErr(msg) { err.textContent = msg; err.classList.remove('hidden'); }
 
-  if (pin1.length < 4)   return showErr('PIN must be 4 digits');
-  if (pin1 !== pin2)     return showErr('PINs do not match');
-  if (!token)            return showErr('GitHub token is required');
-  if (!repo.includes('/')) return showErr('Repo format: owner/name');
+  if (pin1.length < 4)       return showErr('PIN must be 4 digits');
+  if (pin1 !== pin2)         return showErr('PINs do not match');
+  if (!token)                return showErr('GitHub token is required');
+  if (!repo.includes('/'))   return showErr('Repo format: owner/name');
+
+  const labels = {};
+  SUBJECTS.forEach(s => {
+    const val = document.getElementById('label_' + s.id)?.value.trim();
+    labels[s.id] = val || defaultCodeName(s.id);
+  });
 
   err.classList.add('hidden');
   btn.textContent = 'Setting up…';
@@ -546,26 +607,37 @@ async function doSetup() {
 
   localStorage.setItem('gh_token', token);
   localStorage.setItem('gh_repo', repo);
+  localStorage.setItem('labels', JSON.stringify(labels));
   await savePin(pin1);
 
   try {
     state.data = await loadData();
     goHome();
-  } catch (e) {
+  } catch {
     showErr('Could not connect to GitHub. Check your token and repo name.');
     btn.textContent = 'Get started';
     btn.disabled = false;
   }
 }
 
-let _pin = '';
+async function deleteSession(id) {
+  if (!confirm('Delete this session?')) return;
+  state.data.sessions = state.data.sessions.filter(s => s.id !== id);
+  await saveData(state.data);
+  viewHistory(state.data);
+}
 
+async function wipeData() {
+  if (!confirm('Wipe ALL sessions? This cannot be undone.')) return;
+  state.data = emptyData();
+  await saveData(state.data);
+  goHome();
+}
+
+let _pin = '';
 async function pinKey(key) {
-  if (key === '⌫') {
-    _pin = _pin.slice(0, -1);
-  } else if (_pin.length < 4) {
-    _pin += key;
-  }
+  if (key === '⌫') { _pin = _pin.slice(0, -1); }
+  else if (_pin.length < 4) { _pin += key; }
 
   const dots = document.querySelectorAll('#pin-dots span');
   dots.forEach((d, i) => d.classList.toggle('filled', i < _pin.length));
@@ -580,69 +652,50 @@ async function pinKey(key) {
     state.data = await loadData();
     goHome();
   } else {
-    const errEl = document.getElementById('lock-error');
-    if (errEl) {
-      errEl.classList.remove('hidden');
-      setTimeout(() => errEl.classList.add('hidden'), 1600);
-    }
+    const e = document.getElementById('lock-error');
+    if (e) { e.classList.remove('hidden'); setTimeout(() => e.classList.add('hidden'), 1600); }
   }
 }
 
-function startLog() {
-  state.draft = { track: null, domains: [], entries: [], note: '' };
-  state.step  = 0;
-  viewLog();
+function startAssess(subjectId) {
+  state.draft = { subject: subjectId, ratings: {}, note: '', expanded: null };
+  viewAssess(subjectId);
 }
 
-function setTrack(track) {
-  state.draft.track = track;
-  viewLog();
+function toggleCard(areaId) {
+  state.draft.expanded = state.draft.expanded === areaId ? null : areaId;
+  viewAssess(state.draft.subject);
 }
 
-function toggleDomain(id) {
-  const d = state.draft.domains;
-  const i = d.indexOf(id);
-  i >= 0 ? d.splice(i, 1) : d.push(id);
-  viewLog();
+function rateArea(subjectId, areaId, rating) {
+  state.draft.ratings[areaId] = rating;
+  state.draft.expanded = null;
+  viewAssess(subjectId);
 }
 
-function toggleSignal(domainId, signalId) {
-  let entry = state.draft.entries.find(e => e.domain === domainId);
-  if (!entry) {
-    entry = { domain: domainId, signals: [] };
-    state.draft.entries.push(entry);
-  }
-  const i = entry.signals.indexOf(signalId);
-  i >= 0 ? entry.signals.splice(i, 1) : entry.signals.push(signalId);
-  viewLog();
-}
-
-function nextStep() { state.step++; viewLog(); }
-function prevStep() { state.step = Math.max(0, state.step - 1); viewLog(); }
-
-async function saveLog() {
-  state.draft.note = (document.getElementById('log-note') || {}).value || '';
-
-  const btn  = document.getElementById('save-btn');
+async function saveAssess(subjectId) {
+  const note  = document.getElementById('assess-note')?.value || '';
+  const btn   = document.getElementById('save-btn');
   const errEl = document.getElementById('save-error');
+
   btn.textContent = 'Saving…';
   btn.disabled = true;
 
-  const interaction = {
+  const session = {
     id:      Date.now().toString(),
     date:    new Date().toISOString().split('T')[0],
-    track:   state.draft.track,
-    entries: state.draft.entries.filter(e => e.signals.length > 0),
-    note:    state.draft.note,
+    subject: subjectId,
+    ratings: { ...state.draft.ratings },
+    note,
   };
 
-  state.data.interactions.push(interaction);
+  state.data.sessions.push(session);
 
   try {
     await saveData(state.data);
     goHome();
   } catch {
-    errEl.textContent = 'Saved locally. Will sync when back online.';
+    errEl.textContent = 'Saved locally. Will sync when online.';
     errEl.classList.remove('hidden');
     btn.textContent = 'Go home';
     btn.disabled = false;
@@ -650,40 +703,36 @@ async function saveLog() {
   }
 }
 
-async function setVerdict(v) {
-  state.data.manualVerdict = v;
-  await saveData(state.data);
+function switchTab(id) {
+  state.reportTab = id;
   viewReport(state.data);
 }
 
-async function copyReport() {
-  const text = (document.getElementById('report-text') || {}).textContent || '';
-  const btn  = document.querySelector('.btn-secondary');
+async function doCopy() {
+  const text = document.getElementById('report-text')?.textContent || '';
+  const btn  = document.querySelectorAll('.btn-secondary')[0];
   try {
     await navigator.clipboard.writeText(text);
-    if (btn) { btn.textContent = 'Copied!'; setTimeout(() => { btn.textContent = 'Copy discussion guide'; }, 1500); }
-  } catch {
-    alert(text);
-  }
+    if (btn) { btn.textContent = 'Copied!'; setTimeout(() => { btn.textContent = 'Copy'; }, 1500); }
+  } catch { alert(text); }
 }
 
-// ─── Router ───────────────────────────────────────────────────────────────────
+function doDownload() {
+  const text = document.getElementById('report-text')?.textContent || '';
+  downloadReport(text, state.reportTab);
+}
+
+// ── Router ────────────────────────────────────────────────────────────────────
 
 function goHome()    { state.view = 'home';    viewHome(state.data); }
 function goHistory() { state.view = 'history'; viewHistory(state.data); }
 function goReport()  { state.view = 'report';  viewReport(state.data); }
 
-// ─── Init ─────────────────────────────────────────────────────────────────────
+// ── Init ──────────────────────────────────────────────────────────────────────
 
 async function init() {
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
-  }
-  if (!isSetup()) {
-    viewSetup();
-  } else {
-    viewLock();
-  }
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+  isSetup() ? viewLock() : viewSetup();
 }
 
 document.addEventListener('DOMContentLoaded', init);

@@ -1,184 +1,211 @@
 # PRD: Daily Management Log
 
 ## Overview
-A mobile-first daily logging app for a manager to track observable signals across two parallel tracks — their direct report's growth and their own management quality — building toward an assessment verdict and a structured discussion guide for a stakeholder.
+A mobile-first PWA for a design lead to log daily observations across four relationships — direct report, self (360), PM, and leadership — building an evidence base for honest, structured conversations with their stakeholder. All personal names are replaced with code names configured at setup. No PII in public code.
 
 ---
 
-## Problem
-Without a consistent logging system, manager assessments are based on recency bias and gut feel. This app creates a 30-second daily ritual after each interaction, capturing signals across defined criteria so the verdict is evidence-based and the discussion with the stakeholder is grounded and clear.
+## Deployment
+- **App code**: public repo (`berto-play/berto.design`) — no PII
+- **Data**: private repo (`berto-play/berto-log-data`) — synced via GitHub API
+- **Hosting**: GitHub Pages
+- **Access**: PIN-protected on every device
 
 ---
 
 ## Users
 
-| Role | Purpose |
+| Role | Description |
 |---|---|
-| Manager (primary user) | Log daily, review patterns, prepare for stakeholder conversation |
-| Direct Report (subject) | Being assessed across 5 domains |
-| Stakeholder | Receives discussion guide, not the raw data |
+| Manager (primary user) | Logs sessions, reviews patterns, generates discussion guides |
+| Stakeholder | Receives discussion guide output in 1:1 conversations |
 
 ---
 
-## Two Tracks
+## Four Assessment Tracks
 
-**Direct Report Track** — Is this person growing?
-**Manager Track** — Am I managing well?
+| Track | Role | Purpose |
+|---|---|---|
+| Direct Report | Employee being managed | Growing or not? Evidence for stakeholder verdict |
+| Myself (360) | Self-assessment | Am I meeting stakeholder expectations? |
+| PM | Collaborator (not managed) | Accountability log — record of contribution and gaps |
+| Leadership | Manager / stakeholder | Relationship tracking — clarity, feedback quality, support |
 
-Both logged per interaction. Both feed the final report.
+Code names for all four are set at first setup and stored in the private data repo. They never appear in the public codebase.
 
 ---
 
-## Domains & Signals
+## Assessment Framework
 
-### 1. Problem Framing
+### Ratings (all tracks)
+| Rating | Meaning |
+|---|---|
+| Not yet | Pattern of gaps, not meeting the bar |
+| Developing | Inconsistent, some progress |
+| Solid | Consistently meeting expectations |
+| Strong | Exceeding, leading without prompting |
 
-| Signal | Track | Type |
-|---|---|---|
-| Defined requirements before jumping to execution | Direct Report | Positive |
-| Jumped to execution before problem was framed | Direct Report | Negative |
-| Asked clarifying questions | Direct Report | Positive |
-| Provided clear frame before handing work | Manager | Positive |
-| Handed work without context | Manager | Negative |
+### Verdict (calculated per session)
+- **Growing** — average rating ≥ 2.0 (Solid+)
+- **Not Sure** — average rating 1.0–2.0
+- **Flag a Concern** — average rating < 1.0
 
-### 2. Design Execution
-
-| Signal | Track | Type |
-|---|---|---|
-| Strong attention to detail and precision | Direct Report | Positive |
-| Deviated from brief | Direct Report | Negative |
-| Worked within the given frame | Direct Report | Positive |
-| Leveraged their core strengths | Manager | Positive |
-| Gave too much open scope | Manager | Negative |
-
-### 3. Presentation & Reviews
-
-| Signal | Track | Type |
-|---|---|---|
-| Led with insight, not research dump | Direct Report | Positive |
-| Lost the room | Direct Report | Negative |
-| Owned the meeting format | Manager | Positive |
-| Let the review drift | Manager | Negative |
-
-### 4. Feedback Reception
-
-| Signal | Track | Type |
-|---|---|---|
-| Received feedback without defensiveness | Direct Report | Positive |
-| Repeated same pattern after feedback | Direct Report | Negative |
-| Gave direct, honest feedback | Manager | Positive |
-| Over-softened — message disappeared | Manager | Negative |
-
-### 5. Workload Management
-
-| Signal | Track | Type |
-|---|---|---|
-| Handled scope without hand-holding | Direct Report | Positive |
-| Got lost in complexity | Direct Report | Negative |
-| Protected them from messy process | Manager | Positive |
-| Overloaded them with strategy/context | Manager | Negative |
+Verdict is calculated from the session's rated areas. Requires at least 2 areas rated.
 
 ---
 
-## Daily Log Flow
+## Criteria by Track
+
+### Direct Report (5 areas)
+| Area | Question |
+|---|---|
+| Problem Framing | Are they framing before executing? |
+| Design Execution | Are they executing well within given scope? |
+| Presentation & Reviews | Are they presenting work effectively? |
+| Feedback Reception | Are they receiving and applying feedback? |
+| Workload Management | Are they handling scope independently? |
+
+### Myself — 360 (8 areas, based on stakeholder expectations)
+| Area | Question |
+|---|---|
+| Speed & Output | Am I moving fast enough? |
+| Process Ownership | Am I running reviews with structure? |
+| Proactiveness | Am I driving the work or waiting to be told? |
+| Demanding Clarity | Am I naming blockers and demanding inputs? |
+| Direct Report Verdict | Do I have a clear read on my direct report? |
+| Product Challenge | Am I pushing back when something is off? |
+| Right Stakeholders | Am I using the right people for the right things? |
+| Blurred Lines | Am I clear on where design ends and product starts? |
+
+### PM (5 areas — accountability log)
+| Area | Question |
+|---|---|
+| Brief Quality | Are briefs clear and complete before design starts? |
+| Timeliness | Are inputs arriving when needed? |
+| Unblocking | Are they removing blockers quickly? |
+| Prioritisation | Are priorities clear and stable? |
+| Alignment | Are PM and design in sync? |
+
+### Leadership (5 areas — relationship tracking)
+| Area | Question |
+|---|---|
+| Clarity of Expectations | Do I know what is expected of me? |
+| Quality of Feedback | Is feedback useful and direct? |
+| Decision Support | Are decisions being made when needed? |
+| Access & Availability | Can I get time with leadership when needed? |
+| Strategic Alignment | Are we on the same page about direction? |
+
+---
+
+## Session Flow
 
 ```
-Open app
-  → Tap "Log Interaction"
-  → Pick track: Direct Report / Me / Both
-  → Pick relevant domain(s)
-  → Tap signals that fired today
-  → Optional: one-line note
-  → Save (< 30 seconds)
+Home → tap subject card
+  → Assessment screen (accordion cards)
+    → tap area to expand
+    → read signals (reference only)
+    → tap rating: Not yet / Developing / Solid / Strong
+    → card closes, dot updates
+  → optional one-line note
+  → Save session
+→ Back to Home
 ```
+
+Multiple sessions per day per subject are supported. No minimum areas required to save (at least 1 rating needed).
 
 ---
 
-## Verdict
+## Progress Tracking
 
-Three states, shown as a running indicator as signals accumulate:
-
-- **Growing** — consistent positive signals, patterns improving
-- **Not Sure** — mixed signals, no clear direction yet
-- **Flag a Concern** — repeated negatives, no improvement after feedback
-
-### Verdict Logic
-
-Assessment window: 7 days.
-
-The app uses a **hybrid approach**:
-- At day 5, the app generates a suggested verdict based on signal ratios across all domains
-- The manager reviews and confirms or overrides it
-- The suggestion exists to create a forcing function — reacting to "no, that's not right" is faster and sharper than arriving at a blank field
-
-Suggested verdict is calculated from the ratio of positive to negative signals per track, weighted slightly toward pattern consistency over raw count.
+- **Days logged**: count of unique dates with at least one session (no countdown)
+- **Per subject**: total session count + date of last session
+- **Verdict on home**: calculated from most recent session per subject
 
 ---
 
-## Stakeholder Communication Style
+## Report & Export
 
-Understanding how the stakeholder communicates is essential to formatting the discussion guide correctly. The output must match their expectations, not feel like a formal report being handed up.
+### Discussion Guide (per subject)
+Structured talking points formatted for stakeholder communication style:
+- Direct, short sentences
+- Makes a call on the verdict
+- Names gaps explicitly
+- Ends with a clear ask
+- Written to be said out loud, not handed over
 
-**How they think and communicate:**
-- Thinks out loud in real time. Does not deliver polished briefs — builds thinking as they speak. Track it, ask when lost, push back when something does not land.
-- Direct but not harsh. Will say something is underdone without dressing it up. Casual, not aggressive.
-- Asks questions to draw you out. Wants your opinion, not a summary. Silence or vague answers are frustrating.
-- Respects directness. "I need X by Thursday" lands better than "it would be helpful if maybe." Be open, honest, and clear about what you need.
-- Checks alignment constantly — expect "right?" as a signal to engage, not just agree.
-- Gives context once and expects you to run with it. Does not want to repeat themselves or be pulled back in for context already given.
-- Comfortable with ambiguity, impatient with paralysis. Make a call, go, adjust. Do not wait for perfect clarity.
-- Appreciates honesty about what you do not know. Name the gap clearly instead of working around it quietly.
+### Export options
+- **Copy to clipboard** — for pasting into messages or notes
+- **Download as .txt** — named `log-[codename]-[date].txt`
+
+### Stakeholder communication style (shapes report tone)
+- Thinks out loud, expects you to keep up
+- Direct but not harsh
+- Asks questions to draw you out — wants opinions, not summaries
+- Respects directness: "I need X by Thursday" not "it would be helpful if"
+- Uses "right?" to check alignment — engage, don't just agree
+- Gives context once, expects you to run with it
+- Comfortable with ambiguity, impatient with paralysis
+- Appreciates naming what you don't know rather than working around it
 
 ---
 
-## Report: Discussion Guide for Stakeholder
+## Data Management
 
-This is not a written document to send. It is a set of talking points structured for a real-time conversation. The format matches how the stakeholder communicates: direct, opinionated, makes a call, names gaps clearly.
+- **Delete session**: available in History — removes single session, syncs to GitHub
+- **Wipe all data**: available in Report screen — clears all sessions, resets to empty state
+- **Offline**: sessions save to localStorage immediately, sync to GitHub when online. Pending sync indicator shown on home.
 
-### Format
+---
 
+## Data Model
+
+```json
+{
+  "sessions": [
+    {
+      "id": "timestamp-string",
+      "date": "2026-03-26",
+      "subject": "dr | me | pm | boss",
+      "ratings": {
+        "area_id": "Not yet | Developing | Solid | Strong"
+      },
+      "note": "optional one-line note"
+    }
+  ],
+  "pendingSync": false
+}
 ```
-Verdict on [Direct Report]: [Growing / Not Sure / Flag a Concern]
-Here is what I am seeing, right?
 
-Problem Framing: [one direct sentence — pattern, not list]
-Execution: [one direct sentence]
-Presentation: [one direct sentence]
-Feedback: [one direct sentence]
+Code names stored in `localStorage` on each device, not in `data.json`.
 
-The pattern overall: [one sentence that lands the verdict]
+---
 
-On my side:
-  - What I did: [2–3 bullets, specific]
-  - Where I fell short: [1–2 bullets, named clearly, no softening]
+## Tech Stack
 
-What I need from you: [one clear ask — a decision, a deadline, a resource]
-
-One thing I am not sure about yet: [name the gap directly]
-```
-
-### Tone rules for this output
-- Make the call. Do not hedge the verdict with "it is hard to say."
-- Short sentences. No filler.
-- If there is a gap in the data, name it — "I only have 4 data points on this, so take it with that in mind."
-- End with a clear ask or next step. The stakeholder responds to "I need X" not "what do you think we should do."
-- Write it as if you are about to say it out loud, not hand it to someone to read.
+| | |
+|---|---|
+| Framework | Vanilla JS + CSS (no build step) |
+| Auth | 4-digit PIN, SHA-256 hashed, localStorage |
+| Data | GitHub API → private repo `data.json` |
+| Offline | localStorage queue, syncs on next open |
+| PWA | manifest.json + service worker |
+| Deploy | GitHub Pages (public repo, private data) |
+| Install | Safari "Add to Home Screen" |
 
 ---
 
 ## Non-Functional Requirements
-
-- Mobile-first, iOS primary
-- Offline capable — log without internet
-- Daily log completed in under 30 seconds
-- Maximum 3 taps to log a signal
-- Private — nothing shared until explicitly exported
+- Mobile-first, iOS Safari primary
+- Offline capable — logs queue without internet
+- Session save in under 30 seconds
+- No external dependencies, no build step
+- Private data — nothing leaves the device until explicitly synced
 
 ---
 
 ## Out of Scope (V1)
-
-- Multi-person management (one direct report only)
-- Stakeholder having direct app access
-- Auto-analytics or dashboards
-- Team-wide rollout
+- Stakeholder direct access to app or data
+- Auto-analytics or trend charts
+- Multi-user or team-wide use
+- Notification reminders
+- Custom criteria editing in-app
