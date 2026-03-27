@@ -110,8 +110,10 @@ const CRITERIA = {
 const state = {
   view: 'lock',
   data: null,
-  draft: null,   // { subject, ratings: {areaId: rating}, note, expanded: id|null }
+  draft: null,
   reportTab: 'dr',
+  histTab: 'dr',
+  histFilter: 'all',
 };
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
@@ -247,6 +249,47 @@ function patternByArea(sessions, subjectId) {
     dominant[area] = Object.entries(tally).sort((a, b) => b[1] - a[1])[0][0];
   });
   return dominant;
+}
+
+// ── Dashboard helpers ─────────────────────────────────────────────────────────
+
+function filterSessions(sessions, subjectId, filter) {
+  const now      = new Date();
+  const todayStr = now.toISOString().split('T')[0];
+  let filtered   = sessions.filter(s => s.subject === subjectId);
+  if (filter === 'today') {
+    filtered = filtered.filter(s => s.date === todayStr);
+  } else if (filter === 'week') {
+    const cutoff = new Date(now - 7 * 86400000).toISOString().split('T')[0];
+    filtered = filtered.filter(s => s.date >= cutoff);
+  } else if (filter === 'month') {
+    const cutoff = new Date(now - 30 * 86400000).toISOString().split('T')[0];
+    filtered = filtered.filter(s => s.date >= cutoff);
+  }
+  return filtered;
+}
+
+function areaAverages(sessions, subjectId) {
+  const result = {};
+  CRITERIA[subjectId].forEach(c => {
+    const scores = sessions.filter(s => s.ratings[c.id]).map(s => RATINGS.indexOf(s.ratings[c.id]));
+    if (scores.length) result[c.id] = scores.reduce((a, b) => a + b, 0) / scores.length;
+  });
+  return result;
+}
+
+function avgToColor(avg) {
+  if (avg >= 2.5) return { text: 'var(--green)',  bg: 'rgba(48,209,88,0.15)'  };
+  if (avg >= 1.5) return { text: 'var(--accent)', bg: 'rgba(10,132,255,0.15)' };
+  if (avg >= 0.5) return { text: 'var(--yellow)', bg: 'rgba(255,214,10,0.15)' };
+  return             { text: 'var(--red)',    bg: 'rgba(255,69,58,0.15)'   };
+}
+
+function avgToLabel(avg) {
+  if (avg >= 2.5) return 'Strong';
+  if (avg >= 1.5) return 'Solid';
+  if (avg >= 0.5) return 'Developing';
+  return 'Not yet';
 }
 
 // ── Report ────────────────────────────────────────────────────────────────────
@@ -512,29 +555,40 @@ function viewAssess(subjectId) {
 }
 
 function viewHistory(data) {
+  const tab      = state.histTab;
+  const filter   = state.histFilter;
+  const filtered = filterSessions(data.sessions, tab, filter);
+  const avgs     = areaAverages(filtered, tab);
+  const criteria = CRITERIA[tab];
+  const labels   = getLabels();
+
+  // Summary stats
+  const days    = new Set(filtered.map(s => s.date)).size;
+  const verdicts = filtered.map(s => calcVerdict(s.ratings)).filter(Boolean);
+  const overallAvg = Object.values(avgs).length
+    ? Object.values(avgs).reduce((a, b) => a + b, 0) / Object.values(avgs).length
+    : null;
+
+  // Group sessions by date for log section
   const grouped = {};
-  [...data.sessions].reverse().forEach(s => {
+  [...filtered].reverse().forEach(s => {
     if (!grouped[s.date]) grouped[s.date] = [];
     grouped[s.date].push(s);
   });
 
-  const rows = Object.entries(grouped).map(([date, items]) => {
+  const sessionRows = Object.entries(grouped).map(([date, items]) => {
     const label = new Date(date + 'T12:00:00').toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric' });
     return `
       <div class="history-day">
         <div class="history-date">${label}</div>
         ${items.map(s => {
-          const rated   = Object.values(s.ratings).filter(Boolean).length;
           const verdict = calcVerdict(s.ratings);
-          const subj    = SUBJECTS.find(x => x.id === s.subject);
-          const chips = ratingChips(s.ratings, s.subject);
+          const chips   = ratingChips(s.ratings, s.subject);
           return `
             <div class="history-item">
               <div class="hist-row">
-                <span class="role-badge">${esc(subj?.role || s.subject)}</span>
-                <span class="hist-name">${esc(subjectLabel(s.subject))}</span>
-                ${verdict ? `<span class="hist-verdict" style="color:${verdictColor(verdict)}">${verdictLabel(verdict)}</span>` : ''}
-                <button class="delete-btn" onclick="deleteSession('${s.id}')" title="Delete">✕</button>
+                ${verdict ? `<span class="hist-verdict" style="color:${verdictColor(verdict)}">${verdictLabel(verdict)}</span>` : '<span class="muted small">—</span>'}
+                <button class="delete-btn" onclick="deleteSession('${s.id}')">✕</button>
               </div>
               ${chips ? `<div class="chips-row">${chips}</div>` : ''}
               ${s.note ? `<span class="hist-note">${esc(s.note)}</span>` : ''}
@@ -547,14 +601,65 @@ function viewHistory(data) {
     <div class="screen history">
       <div class="screen-header">
         <button class="back-btn" onclick="goHome()">←</button>
-        <span>History</span>
+        <span>Dashboard</span>
       </div>
-      <div class="history-list">
-        ${rows || '<p class="empty">No sessions logged yet.</p>'}
+
+      <div class="report-tabs">
+        ${SUBJECTS.map(s => `
+          <button class="report-tab${tab === s.id ? ' active' : ''}" onclick="switchHistTab('${s.id}')">
+            ${esc(labels[s.id] || s.role.split(' ')[0])}
+          </button>`).join('')}
       </div>
+
+      <div class="filter-row">
+        ${['today','week','month','all'].map(f => `
+          <button class="filter-btn${filter === f ? ' active' : ''}" onclick="switchHistFilter('${f}')">
+            ${f.charAt(0).toUpperCase() + f.slice(1)}
+          </button>`).join('')}
+      </div>
+
+      ${filtered.length === 0 ? `<p class="empty">No sessions in this period.</p>` : `
+
+        <div class="dash-summary">
+          <div class="dash-stat">
+            <span class="dash-num">${filtered.length}</span>
+            <span class="dash-label">sessions</span>
+          </div>
+          <div class="dash-stat">
+            <span class="dash-num">${days}</span>
+            <span class="dash-label">day${days !== 1 ? 's' : ''}</span>
+          </div>
+          ${overallAvg !== null ? `
+          <div class="dash-stat">
+            <span class="dash-num" style="color:${avgToColor(overallAvg).text}">${avgToLabel(overallAvg)}</span>
+            <span class="dash-label">overall</span>
+          </div>` : ''}
+        </div>
+
+        <div class="area-bars">
+          ${criteria.map(c => {
+            const avg = avgs[c.id];
+            if (avg === undefined) return '';
+            const pct = Math.round((avg / 3) * 100);
+            const col = avgToColor(avg);
+            return `
+              <div class="area-bar-row">
+                <span class="area-bar-label">${esc(c.area)}</span>
+                <div class="area-bar-track">
+                  <div class="area-bar-fill" style="width:${pct}%;background:${col.text}"></div>
+                </div>
+                <span class="area-bar-val" style="color:${col.text}">${esc(avgToLabel(avg))}</span>
+              </div>`;
+          }).filter(Boolean).join('')}
+        </div>
+
+        <div class="section-label">Sessions</div>
+        <div class="history-list">${sessionRows}</div>
+      `}
+
       <nav class="bottom-nav">
         <button class="nav-btn" onclick="goHome()">Home</button>
-        <button class="nav-btn active">History</button>
+        <button class="nav-btn active">Dashboard</button>
         <button class="nav-btn" onclick="goReport()">Report</button>
         <button class="nav-btn" onclick="goSettings()">Settings</button>
       </nav>
@@ -753,10 +858,9 @@ async function saveAssess(subjectId) {
   }
 }
 
-function switchTab(id) {
-  state.reportTab = id;
-  viewReport(state.data);
-}
+function switchTab(id) { state.reportTab = id; viewReport(state.data); }
+function switchHistTab(id) { state.histTab = id; viewHistory(state.data); }
+function switchHistFilter(f) { state.histFilter = f; viewHistory(state.data); }
 
 async function doCopy() {
   const text = document.getElementById('report-text')?.textContent || '';
@@ -796,13 +900,20 @@ function viewSettings() {
              <input type="password" id="settings_token" placeholder="ghp_…" autocomplete="off">
              <label>Data repo (owner/name)</label>
              <input type="text" id="settings_repo" value="berto-play/berto-log-data" autocomplete="off" spellcheck="false">`
-          : `<p class="field-hint" style="color:var(--green)">✓ Syncing to GitHub</p>
-             <button class="btn-danger" style="margin-top:8px" onclick="disconnectGitHub()">Disconnect GitHub</button>`
+          : `<p class="field-hint" style="color:var(--green)">✓ Syncing to GitHub</p>`
         }
         <p id="settings-msg" class="hidden" style="color:var(--green);font-size:14px;margin-top:8px">Saved.</p>
         <button class="btn-primary" onclick="saveSettings()">Save</button>
 
         <div class="form-divider danger-divider">Danger zone</div>
+        ${!isLocalMode() ? `
+        <div class="danger-zone">
+          <div class="danger-info">
+            <strong>Disconnect GitHub</strong>
+            <p>Stops syncing. Data stays on this device only. Cannot be undone without re-entering your token.</p>
+          </div>
+          <button class="btn-danger" onclick="disconnectGitHub()">Disconnect</button>
+        </div>` : ''}
         <div class="danger-zone">
           <div class="danger-info">
             <strong>Wipe all sessions</strong>
