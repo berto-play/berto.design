@@ -105,6 +105,31 @@ const CRITERIA = {
   ],
 };
 
+// ── Memo (Eagle's brief) ──────────────────────────────────────────────────────
+
+const MEMO_CONTENT = {
+  expectations: [
+    'Move fast. Design stays ahead of tech delivery. Prototype instead of over-researching. Features reach dev-ready without delays.',
+    'Own the process. Set the agenda before every review. Come with a point of view, not just an update. Every review ends with one decision made.',
+    'Drive the work. Identify what the team needs before they ask. Kick off features with clear framing. Do not wait for a complete brief before acting.',
+    'Name blockers out loud. Do not silently absorb them. Design does not start without user stories. Tell stakeholders directly what you need.',
+    'Have a clear read on your direct report. Give direct, honest feedback without softening it. Lead by example. Be able to give a clear growing-or-not verdict.',
+    'Challenge the product. Use your experience to question the thinking. Name when something does not make sense. Challenge scope before committing to designing.',
+    'Use the right people. Domain questions go to domain experts. Systems questions go to the systems lead. Only pull leadership in for decisions, not context.',
+    'Know where design ends. Name when something is a product call versus a design call. Do not absorb product work without flagging it.',
+  ],
+  communication: [
+    'Thinks out loud — keep up.',
+    'Direct but not harsh.',
+    'Asks questions to draw you out — give opinions, not summaries.',
+    'Respects directness: say "I need X by Thursday", not "it would be helpful if".',
+    'Uses "right?" to check alignment — engage, do not just agree.',
+    'Gives context once and expects you to run with it.',
+    'Comfortable with ambiguity, impatient with paralysis.',
+    'Appreciates naming what you do not know rather than working around it.',
+  ],
+};
+
 // ── State ─────────────────────────────────────────────────────────────────────
 
 const state = {
@@ -461,6 +486,7 @@ function viewHome(data) {
         <div class="logo-sm">Log</div>
         <span class="days-badge">${days} day${days !== 1 ? 's' : ''} logged</span>
         ${isLocalMode() ? '<span class="local-badge">Local only</span>' : data.pendingSync ? '<span class="sync-badge">⬆ pending</span>' : ''}
+        <button class="brief-btn" onclick="goMemo()">Brief</button>
       </div>
 
       <div class="subject-list">
@@ -1037,6 +1063,65 @@ function doDownload() {
   downloadReport(text, state.reportTab);
 }
 
+function viewMemo() {
+  const leaderName = subjectLabel('boss');
+  const isSpeaking = 'speechSynthesis' in window && window.speechSynthesis.speaking;
+
+  const section = (title, items) => `
+    <div class="memo-section">
+      <div class="memo-section-title">${esc(title)}</div>
+      <ul class="memo-list">
+        ${items.map(p => `<li>${esc(p)}</li>`).join('')}
+      </ul>
+    </div>`;
+
+  render(`
+    <div class="screen memo">
+      <div class="screen-header">
+        <button class="back-btn" onclick="stopSpeak();goHome()">←</button>
+        <div>
+          <div style="font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:0.8px">Leadership brief</div>
+          <div style="font-weight:700">${esc(leaderName)}'s expectations</div>
+        </div>
+        <button class="speak-btn" id="speak-btn" onclick="toggleSpeak()">
+          ${isSpeaking ? '⏹ Stop' : '▶ Speak'}
+        </button>
+      </div>
+
+      ${section('How ' + leaderName + ' expects you to operate', MEMO_CONTENT.expectations)}
+      ${section('How ' + leaderName + ' communicates', MEMO_CONTENT.communication)}
+    </div>
+  `);
+}
+
+function toggleSpeak() {
+  if (!('speechSynthesis' in window)) return;
+  if (window.speechSynthesis.speaking) {
+    window.speechSynthesis.cancel();
+    const btn = document.getElementById('speak-btn');
+    if (btn) btn.textContent = '▶ Speak';
+    return;
+  }
+  const leaderName = subjectLabel('boss');
+  const allText = leaderName + "'s expectations. "
+    + MEMO_CONTENT.expectations.join(' ')
+    + ' How ' + leaderName + ' communicates. '
+    + MEMO_CONTENT.communication.join(' ');
+  const utt = new SpeechSynthesisUtterance(allText);
+  utt.rate = 0.92;
+  utt.onend = () => {
+    const btn = document.getElementById('speak-btn');
+    if (btn) btn.textContent = '▶ Speak';
+  };
+  window.speechSynthesis.speak(utt);
+  const btn = document.getElementById('speak-btn');
+  if (btn) btn.textContent = '⏹ Stop';
+}
+
+function stopSpeak() {
+  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+}
+
 function viewSettings() {
   const labels    = getLabels();
   const connected = !isLocalMode();
@@ -1159,6 +1244,7 @@ function disconnectGitHub() {
 // ── Router ────────────────────────────────────────────────────────────────────
 
 function goHome()     { state.view = 'home';     viewHome(state.data); }
+function goMemo()     { state.view = 'memo';     viewMemo(); }
 function goHistory()  { state.view = 'history';  viewHistory(state.data); }
 function goReport()   { state.view = 'report';   viewReport(state.data); }
 function goSettings() { state.view = 'settings'; viewSettings(); }
