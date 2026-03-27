@@ -108,15 +108,14 @@ const CRITERIA = {
 // ── Memo (Eagle's brief) ──────────────────────────────────────────────────────
 
 const MEMO_CONTENT = {
-  // {dr} = direct report code name, {boss} = leadership code name — replaced at render time
   rules: [
     'Drive. Don\'t wait. Identify what the team needs before they ask. Kick off with clear framing. Do not wait for a complete brief before acting.',
     'Own the review. Set the agenda. Come with a point of view, not just an update. Every review ends with one decision made.',
     '1 month ahead of tech. Design is always dev-ready before engineering needs it. Prototype instead of over-researching.',
     'Challenge the thinking. Use your experience to question the approach. Name when something does not make sense before committing to design.',
-    '{dr} verdict. Have a clear read. Give direct, honest feedback without softening it. Be ready to say growing or not.',
+    'DR verdict. Have a clear read. Give direct, honest feedback without softening it. Be ready to say growing or not.',
     'Speed above all. Move fast. Do not let process slow the work.',
-    'Healthcare domain questions do not go to {boss}. Route to the right expert. Only pull leadership in for decisions, not context.',
+    'Healthcare domain questions do not go to Eagle. Route to the right expert. Only pull leadership in for decisions, not context.',
   ],
   communication: [
     'Thinks out loud — keep up.',
@@ -1142,16 +1141,13 @@ function doDownload() {
 
 function viewMemo() {
   const leaderName = subjectLabel('boss');
-  const drName     = subjectLabel('dr');
   const isSpeaking = 'speechSynthesis' in window && window.speechSynthesis.speaking;
-
-  const inject = s => s.replace(/\{boss\}/g, leaderName).replace(/\{dr\}/g, drName);
 
   const section = (title, items) => `
     <div class="memo-section">
       <div class="memo-section-title">${esc(title)}</div>
       <ul class="memo-list">
-        ${items.map(p => `<li>${esc(inject(p))}</li>`).join('')}
+        ${items.map(p => `<li>${esc(p)}</li>`).join('')}
       </ul>
     </div>`;
 
@@ -1183,8 +1179,8 @@ function toggleSpeak() {
     return;
   }
   const leaderName = subjectLabel('boss');
-  const allText = leaderName + "'s expectations. "
-    + MEMO_CONTENT.expectations.join(' ')
+  const allText = leaderName + "'s rules. "
+    + MEMO_CONTENT.rules.join(' ')
     + ' How ' + leaderName + ' communicates. '
     + MEMO_CONTENT.communication.join(' ');
   const utt = new SpeechSynthesisUtterance(allText);
