@@ -200,7 +200,10 @@ input:focus, textarea:focus { border-color: var(--accent); }
   margin-left: 6px;
 }
 
-.sync-badge { font-size: 12px; color: var(--yellow); margin-left: auto; }
+.sync-badge  { font-size: 12px; color: var(--yellow); margin-left: auto; }
+.local-badge { font-size: 12px; color: var(--text2);  margin-left: auto; }
+.optional-label { font-size: 10px; font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--text2); margin-left: 6px; }
+.local-mode-hint { text-align: center; margin-top: 8px; }
 
 /* ── Subject cards ──────────────────────────────────── */
 

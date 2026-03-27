@@ -125,7 +125,8 @@ async function checkPin(pin) {
   const s = localStorage.getItem('pin_hash');
   return !!s && s === await hashPin(pin);
 }
-function isSetup() { return !!localStorage.getItem('pin_hash') && !!localStorage.getItem('gh_token'); }
+function isLocalMode() { return !localStorage.getItem('gh_token'); }
+function isSetup() { return !!localStorage.getItem('pin_hash'); }
 
 // ── GitHub ────────────────────────────────────────────────────────────────────
 
@@ -196,6 +197,7 @@ async function loadData() {
 
 async function saveData(data) {
   localStorage.setItem('data', JSON.stringify(data));
+  if (isLocalMode()) return;
   try {
     await ghWrite(data, localStorage.getItem('gh_sha'));
     data.pendingSync = false;
@@ -341,15 +343,16 @@ function viewSetup() {
           <input type="text" id="label_${s.id}" placeholder="e.g. ${defaultCodeName(s.id)}" autocomplete="off" spellcheck="false">
         `).join('')}
 
-        <div class="form-divider">GitHub sync</div>
+        <div class="form-divider">GitHub sync <span class="optional-label">optional</span></div>
         <label>Personal access token</label>
         <input type="password" id="gh_token" placeholder="ghp_… or github_pat_…" autocomplete="off">
-        <p class="field-hint">github.com → Settings → Developer settings → Fine-grained tokens. Grant read &amp; write Contents on your data repo.</p>
+        <p class="field-hint">Skip this to use local-only mode — data stays on this device. Add a token later in Settings to enable cross-device sync.</p>
         <label>Data repo (owner/name)</label>
         <input type="text" id="gh_repo" value="berto-play/berto-log-data" autocomplete="off" spellcheck="false">
 
         <p id="setup-error" class="error hidden"></p>
         <button class="btn-primary" id="setup-btn" onclick="doSetup()">Get started</button>
+        <p class="local-mode-hint muted small">No token? Tap Get started — data saves locally on this device.</p>
       </div>
     </div>
   `);
@@ -386,7 +389,7 @@ function viewHome(data) {
       <div class="home-header">
         <div class="logo-sm">Log</div>
         <span class="days-badge">${days} day${days !== 1 ? 's' : ''} logged</span>
-        ${data.pendingSync ? '<span class="sync-badge">⬆ pending</span>' : ''}
+        ${isLocalMode() ? '<span class="local-badge">Local only</span>' : data.pendingSync ? '<span class="sync-badge">⬆ pending</span>' : ''}
       </div>
 
       <div class="subject-list">
@@ -593,10 +596,9 @@ async function doSetup() {
 
   function showErr(msg) { err.textContent = msg; err.classList.remove('hidden'); }
 
-  if (pin1.length < 4)       return showErr('PIN must be 4 digits');
-  if (pin1 !== pin2)         return showErr('PINs do not match');
-  if (!token)                return showErr('GitHub token is required');
-  if (!repo.includes('/'))   return showErr('Repo format: owner/name');
+  if (pin1.length < 4)     return showErr('PIN must be 4 digits');
+  if (pin1 !== pin2)       return showErr('PINs do not match');
+  if (token && !repo.includes('/')) return showErr('Repo format: owner/name');
 
   const labels = {};
   SUBJECTS.forEach(s => {
@@ -608,13 +610,21 @@ async function doSetup() {
   btn.textContent = 'Setting up…';
   btn.disabled = true;
 
-  localStorage.setItem('gh_token', token);
-  localStorage.setItem('gh_repo', repo);
+  if (token) {
+    localStorage.setItem('gh_token', token);
+    localStorage.setItem('gh_repo', repo);
+  } else {
+    localStorage.removeItem('gh_token');
+    localStorage.removeItem('gh_repo');
+    localStorage.setItem('local_mode', '1');
+  }
+
   localStorage.setItem('labels', JSON.stringify(labels));
   await savePin(pin1);
 
   try {
-    state.data = await loadData();
+    state.data = token ? await loadData() : emptyData();
+    if (!token) localStorage.setItem('data', JSON.stringify(state.data));
     goHome();
   } catch {
     showErr('Could not connect to GitHub. Check your token and repo name.');
@@ -742,8 +752,18 @@ function viewSettings() {
             value="${esc(labels[s.id] || defaultCodeName(s.id))}"
             autocomplete="off" spellcheck="false">
         `).join('')}
+        <div class="form-divider">GitHub sync</div>
+        ${isLocalMode()
+          ? `<p class="field-hint">Currently local-only. Add a token to enable cross-device sync.</p>
+             <label>Personal access token</label>
+             <input type="password" id="settings_token" placeholder="ghp_…" autocomplete="off">
+             <label>Data repo (owner/name)</label>
+             <input type="text" id="settings_repo" value="berto-play/berto-log-data" autocomplete="off" spellcheck="false">`
+          : `<p class="field-hint" style="color:var(--green)">✓ Syncing to GitHub</p>
+             <button class="btn-danger" style="margin-top:8px" onclick="disconnectGitHub()">Disconnect GitHub</button>`
+        }
         <p id="settings-msg" class="hidden" style="color:var(--green);font-size:14px;margin-top:8px">Saved.</p>
-        <button class="btn-primary" onclick="saveSettings()">Save code names</button>
+        <button class="btn-primary" onclick="saveSettings()">Save</button>
       </div>
     </div>
   `);
@@ -756,8 +776,31 @@ function saveSettings() {
     labels[s.id] = val || defaultCodeName(s.id);
   });
   localStorage.setItem('labels', JSON.stringify(labels));
+
+  // Connect GitHub if token provided in local mode
+  if (isLocalMode()) {
+    const token = document.getElementById('settings_token')?.value.trim();
+    const repo  = document.getElementById('settings_repo')?.value.trim();
+    if (token && repo && repo.includes('/')) {
+      localStorage.setItem('gh_token', token);
+      localStorage.setItem('gh_repo', repo);
+      localStorage.removeItem('local_mode');
+      // sync existing local data to GitHub
+      saveData(state.data);
+    }
+  }
+
   const msg = document.getElementById('settings-msg');
-  if (msg) { msg.classList.remove('hidden'); setTimeout(() => msg.classList.add('hidden'), 1500); }
+  if (msg) { msg.classList.remove('hidden'); setTimeout(() => { msg.classList.add('hidden'); viewSettings(); }, 1200); }
+}
+
+function disconnectGitHub() {
+  if (!confirm('Disconnect GitHub? Data stays on this device but will no longer sync.')) return;
+  localStorage.removeItem('gh_token');
+  localStorage.removeItem('gh_repo');
+  localStorage.removeItem('gh_sha');
+  localStorage.setItem('local_mode', '1');
+  viewSettings();
 }
 
 // ── Router ────────────────────────────────────────────────────────────────────
