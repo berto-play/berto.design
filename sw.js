@@ -1,4 +1,4 @@
-const CACHE = 'log-v3';
+const CACHE = 'log-v4';
 const SHELL = ['./', './index.html', './style.css', './app.js', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', e => {
