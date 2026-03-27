@@ -939,7 +939,10 @@ function doDownload() {
 }
 
 function viewSettings() {
-  const labels = getLabels();
+  const labels    = getLabels();
+  const connected = !isLocalMode();
+  const repo      = localStorage.getItem('gh_repo') || 'berto-play/berto-log-data';
+
   render(`
     <div class="screen setup">
       <div class="screen-header">
@@ -955,31 +958,44 @@ function viewSettings() {
             value="${esc(labels[s.id] || defaultCodeName(s.id))}"
             autocomplete="off" spellcheck="false">
         `).join('')}
+
         <div class="form-divider">GitHub sync</div>
-        ${isLocalMode()
-          ? `<p class="field-hint">Currently local-only. Add a token to enable cross-device sync.</p>
-             <label>Personal access token</label>
-             <input type="password" id="settings_token" placeholder="ghp_…" autocomplete="off">
-             <label>Data repo (owner/name)</label>
-             <input type="text" id="settings_repo" value="berto-play/berto-log-data" autocomplete="off" spellcheck="false">`
-          : `<p class="field-hint" style="color:var(--green)">✓ Syncing to GitHub</p>`
-        }
+        ${connected ? `
+          <div class="gh-status-row">
+            <span class="gh-status-dot"></span>
+            <div class="gh-status-text">
+              <span style="color:var(--green);font-weight:600">Connected</span>
+              <span class="gh-repo-label">${esc(repo)}</span>
+            </div>
+          </div>
+          <label style="margin-top:14px">Update token <span class="optional-label">leave blank to keep current</span></label>
+          <input type="password" id="settings_token" placeholder="ghp_… (leave blank to keep)" autocomplete="off">
+          <label>Data repo</label>
+          <input type="text" id="settings_repo" value="${esc(repo)}" autocomplete="off" spellcheck="false">
+        ` : `
+          <p class="field-hint">Local only — add a token to sync across devices.</p>
+          <label>Personal access token</label>
+          <input type="password" id="settings_token" placeholder="ghp_…" autocomplete="off">
+          <label>Data repo (owner/name)</label>
+          <input type="text" id="settings_repo" value="berto-play/berto-log-data" autocomplete="off" spellcheck="false">
+        `}
+
         <p id="settings-msg" class="hidden" style="color:var(--green);font-size:14px;margin-top:8px">Saved.</p>
         <button class="btn-primary" onclick="saveSettings()">Save</button>
 
         <div class="form-divider danger-divider">Danger zone</div>
-        ${!isLocalMode() ? `
+        ${connected ? `
         <div class="danger-zone">
           <div class="danger-info">
             <strong>Disconnect GitHub</strong>
-            <p>Stops syncing. Data stays on this device only. Cannot be undone without re-entering your token.</p>
+            <p>Stops syncing. Your data stays on this device only.</p>
           </div>
           <button class="btn-danger" onclick="disconnectGitHub()">Disconnect</button>
         </div>` : ''}
         <div class="danger-zone">
           <div class="danger-info">
             <strong>Wipe all sessions</strong>
-            <p>Permanently deletes every logged session. Code names and settings are kept. This cannot be undone.</p>
+            <p>Permanently deletes every logged session. Code names and settings are kept.</p>
           </div>
           <button class="btn-danger" onclick="wipeData()">Wipe</button>
         </div>
@@ -996,17 +1012,20 @@ function saveSettings() {
   });
   localStorage.setItem('labels', JSON.stringify(labels));
 
-  // Connect GitHub if token provided in local mode
-  if (isLocalMode()) {
-    const token = document.getElementById('settings_token')?.value.trim();
-    const repo  = document.getElementById('settings_repo')?.value.trim();
-    if (token && repo && repo.includes('/')) {
-      localStorage.setItem('gh_token', token);
-      localStorage.setItem('gh_repo', repo);
-      localStorage.removeItem('local_mode');
-      // sync existing local data to GitHub
-      saveData(state.data);
-    }
+  // Update GitHub token / repo — works whether connected or not
+  const newToken = document.getElementById('settings_token')?.value.trim();
+  const newRepo  = document.getElementById('settings_repo')?.value.trim();
+  if (newToken && newRepo && newRepo.includes('/')) {
+    // New token provided — store it and ensure sync mode is on
+    localStorage.setItem('gh_token', newToken);
+    localStorage.setItem('gh_repo', newRepo);
+    localStorage.removeItem('local_mode');
+    saveData(state.data);
+  } else if (!newToken && newRepo && newRepo.includes('/') && !isLocalMode()) {
+    // No new token but repo field changed while connected — just update repo
+    localStorage.setItem('gh_repo', newRepo);
+  } else if (newToken && (!newRepo || !newRepo.includes('/'))) {
+    // Token entered but repo invalid — ignore silently (Save shows "Saved." for labels only)
   }
 
   const msg = document.getElementById('settings-msg');
@@ -1014,7 +1033,23 @@ function saveSettings() {
 }
 
 function disconnectGitHub() {
-  if (!confirm('Disconnect GitHub? Data stays on this device but will no longer sync.')) return;
+  const btn = document.querySelector('[onclick="disconnectGitHub()"]');
+  if (!btn) return;
+  if (btn.dataset.confirm !== '1') {
+    btn.dataset.confirm = '1';
+    btn.textContent = 'Tap again to confirm';
+    btn.style.background = 'rgba(255,69,58,0.3)';
+    btn.style.borderColor = 'var(--red)';
+    setTimeout(() => {
+      if (btn.dataset.confirm === '1') {
+        btn.dataset.confirm = '';
+        btn.textContent = 'Disconnect';
+        btn.style.background = '';
+        btn.style.borderColor = '';
+      }
+    }, 3000);
+    return;
+  }
   localStorage.removeItem('gh_token');
   localStorage.removeItem('gh_repo');
   localStorage.removeItem('gh_sha');
