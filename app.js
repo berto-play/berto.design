@@ -108,15 +108,15 @@ const CRITERIA = {
 // ── Memo (Eagle's brief) ──────────────────────────────────────────────────────
 
 const MEMO_CONTENT = {
-  expectations: [
-    'Move fast. Design stays ahead of tech delivery. Prototype instead of over-researching. Features reach dev-ready without delays.',
-    'Own the process. Set the agenda before every review. Come with a point of view, not just an update. Every review ends with one decision made.',
-    'Drive the work. Identify what the team needs before they ask. Kick off features with clear framing. Do not wait for a complete brief before acting.',
-    'Name blockers out loud. Do not silently absorb them. Design does not start without user stories. Tell stakeholders directly what you need.',
-    'Have a clear read on your direct report. Give direct, honest feedback without softening it. Lead by example. Be able to give a clear growing-or-not verdict.',
-    'Challenge the product. Use your experience to question the thinking. Name when something does not make sense. Challenge scope before committing to designing.',
-    'Use the right people. Domain questions go to domain experts. Systems questions go to the systems lead. Only pull leadership in for decisions, not context.',
-    'Know where design ends. Name when something is a product call versus a design call. Do not absorb product work without flagging it.',
+  // {dr} = direct report code name, {boss} = leadership code name — replaced at render time
+  rules: [
+    'Drive. Don\'t wait. Identify what the team needs before they ask. Kick off with clear framing. Do not wait for a complete brief before acting.',
+    'Own the review. Set the agenda. Come with a point of view, not just an update. Every review ends with one decision made.',
+    '1 month ahead of tech. Design is always dev-ready before engineering needs it. Prototype instead of over-researching.',
+    'Challenge the thinking. Use your experience to question the approach. Name when something does not make sense before committing to design.',
+    '{dr} verdict. Have a clear read. Give direct, honest feedback without softening it. Be ready to say growing or not.',
+    'Speed above all. Move fast. Do not let process slow the work.',
+    'Healthcare domain questions do not go to {boss}. Route to the right expert. Only pull leadership in for decisions, not context.',
   ],
   communication: [
     'Thinks out loud — keep up.',
@@ -204,8 +204,12 @@ async function loadData() {
     const { data, sha } = await ghRead();
     if (data) {
       if (sha) localStorage.setItem('gh_sha', sha);
-      // migrate old format
-      const normalised = data.sessions ? data : { sessions: [], pendingSync: false };
+      // restore labels on new device if not already configured
+      if (data.labels && !localStorage.getItem('labels')) {
+        localStorage.setItem('labels', JSON.stringify(data.labels));
+      }
+      // normalise — keep only sessions/pendingSync in local state
+      const normalised = data.sessions ? { sessions: data.sessions, pendingSync: false } : emptyData();
       localStorage.setItem('data', JSON.stringify(normalised));
       return normalised;
     }
@@ -227,7 +231,8 @@ async function saveData(data) {
   localStorage.setItem('data', JSON.stringify(data));
   if (isLocalMode()) return;
   try {
-    await ghWrite(data, localStorage.getItem('gh_sha'));
+    const payload = { ...data, labels: getLabels() };
+    await ghWrite(payload, localStorage.getItem('gh_sha'));
     data.pendingSync = false;
     localStorage.setItem('data', JSON.stringify(data));
   } catch {
@@ -417,27 +422,32 @@ function viewSetup() {
         <p class="muted">Set up this device</p>
       </div>
       <div class="form">
+
+        <div class="form-divider">Sync <span class="optional-label">optional — skip to use locally</span></div>
+        <div class="try-it-box">
+          <span class="try-it-icon">💡</span>
+          <p>Already set up on another device? Enter your token — code names will be restored automatically.</p>
+        </div>
+        <label>GitHub token</label>
+        <input type="password" id="gh_token" placeholder="ghp_… (leave blank to skip)" autocomplete="off"
+          onblur="prefillFromGitHub()">
+        <label>Data repo</label>
+        <input type="text" id="gh_repo" value="berto-play/berto-log-data" autocomplete="off" spellcheck="false"
+          onblur="prefillFromGitHub()">
+        <p id="restore-hint" class="field-hint success-hint hidden"></p>
+
+        <div class="form-divider">PIN</div>
         <label>PIN (4 digits)</label>
         <input type="password" inputmode="numeric" maxlength="4" id="pin1" placeholder="••••" autocomplete="new-password">
         <label>Confirm PIN</label>
         <input type="password" inputmode="numeric" maxlength="4" id="pin2" placeholder="••••" autocomplete="new-password">
 
         <div class="form-divider">Code names</div>
-        <p class="field-hint">Use code names — these are stored privately, never in the public code.</p>
+        <p class="field-hint">Use code names — stored privately, never in the public code.</p>
         ${SUBJECTS.map(s => `
           <label>${s.role}</label>
           <input type="text" id="label_${s.id}" placeholder="e.g. ${defaultCodeName(s.id)}" autocomplete="off" spellcheck="false">
         `).join('')}
-
-        <div class="form-divider">Sync <span class="optional-label">optional — skip to use locally</span></div>
-        <div class="try-it-box">
-          <span class="try-it-icon">💡</span>
-          <p>Leave this blank to try the app — your data saves on this device. You can add a token later in Settings to sync across devices.</p>
-        </div>
-        <label>GitHub token</label>
-        <input type="password" id="gh_token" placeholder="ghp_… (leave blank to skip)" autocomplete="off">
-        <label>Data repo</label>
-        <input type="text" id="gh_repo" value="berto-play/berto-log-data" autocomplete="off" spellcheck="false">
 
         <p id="setup-error" class="error hidden"></p>
         <button class="btn-primary" id="setup-btn" onclick="doSetup()">Get started</button>
@@ -448,6 +458,31 @@ function viewSetup() {
 
 function defaultCodeName(id) {
   return { dr: 'Alpha', me: 'Self', pm: 'Charlie', boss: 'Eagle' }[id] || id;
+}
+
+async function prefillFromGitHub() {
+  const token = document.getElementById('gh_token')?.value.trim();
+  const repo  = document.getElementById('gh_repo')?.value.trim();
+  if (!token || !repo?.includes('/')) return;
+  const hint = document.getElementById('restore-hint');
+  if (hint) { hint.textContent = 'Checking…'; hint.classList.remove('hidden'); }
+  try {
+    const res = await fetch(`https://api.github.com/repos/${repo}/contents/data.json`, {
+      headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' }
+    });
+    if (!res.ok) { if (hint) hint.classList.add('hidden'); return; }
+    const file = await res.json();
+    const data = JSON.parse(decodeURIComponent(escape(atob(file.content.replace(/\n/g, '')))));
+    if (data.labels) {
+      SUBJECTS.forEach(s => {
+        const el = document.getElementById('label_' + s.id);
+        if (el && data.labels[s.id]) el.value = data.labels[s.id];
+      });
+      if (hint) { hint.textContent = '✓ Code names restored from your data.'; hint.classList.remove('hidden'); }
+    } else {
+      if (hint) hint.classList.add('hidden');
+    }
+  } catch { if (hint) hint.classList.add('hidden'); }
 }
 
 function viewLock() {
@@ -1107,13 +1142,16 @@ function doDownload() {
 
 function viewMemo() {
   const leaderName = subjectLabel('boss');
+  const drName     = subjectLabel('dr');
   const isSpeaking = 'speechSynthesis' in window && window.speechSynthesis.speaking;
+
+  const inject = s => s.replace(/\{boss\}/g, leaderName).replace(/\{dr\}/g, drName);
 
   const section = (title, items) => `
     <div class="memo-section">
       <div class="memo-section-title">${esc(title)}</div>
       <ul class="memo-list">
-        ${items.map(p => `<li>${esc(p)}</li>`).join('')}
+        ${items.map(p => `<li>${esc(inject(p))}</li>`).join('')}
       </ul>
     </div>`;
 
@@ -1123,14 +1161,14 @@ function viewMemo() {
         <button class="back-btn" onclick="stopSpeak();goHome()">←</button>
         <div>
           <div style="font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:0.8px">Leadership brief</div>
-          <div style="font-weight:700">${esc(leaderName)}'s expectations</div>
+          <div style="font-weight:700">${esc(leaderName)}'s rules</div>
         </div>
         <button class="speak-btn" id="speak-btn" onclick="toggleSpeak()">
           ${isSpeaking ? '⏹ Stop' : '▶ Speak'}
         </button>
       </div>
 
-      ${section('How ' + leaderName + ' expects you to operate', MEMO_CONTENT.expectations)}
+      ${section(leaderName + '\'s rules', MEMO_CONTENT.rules)}
       ${section('How ' + leaderName + ' communicates', MEMO_CONTENT.communication)}
     </div>
   `);
