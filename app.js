@@ -442,6 +442,12 @@ function viewLock() {
     </div>
   `);
   window._pin = '';
+  // Touch pressed state for iOS PWA (`:active` unreliable on touch)
+  document.querySelectorAll('.key:not(.invisible)').forEach(btn => {
+    btn.addEventListener('touchstart', () => btn.classList.add('pressed'), { passive: true });
+    btn.addEventListener('touchend',   () => btn.classList.remove('pressed'), { passive: true });
+    btn.addEventListener('touchcancel',() => btn.classList.remove('pressed'), { passive: true });
+  });
 }
 
 function viewHome(data) {
@@ -568,13 +574,42 @@ function viewHistory(data) {
   const labels   = getLabels();
 
   // Summary stats
-  const days    = new Set(filtered.map(s => s.date)).size;
-  const verdicts = filtered.map(s => calcVerdict(s.ratings)).filter(Boolean);
+  const days       = new Set(filtered.map(s => s.date)).size;
   const overallAvg = Object.values(avgs).length
     ? Object.values(avgs).reduce((a, b) => a + b, 0) / Object.values(avgs).length
     : null;
 
-  // Group sessions by date for log section
+  // Insight callout — surface strongest and weakest areas
+  const ratedAreas  = criteria.filter(c => avgs[c.id] !== undefined);
+  const strongAreas = ratedAreas.filter(c => avgs[c.id] >= 2.5).map(c => c.area);
+  const flagAreas   = ratedAreas.filter(c => avgs[c.id] < 1.0).map(c => c.area);
+  const devAreas    = ratedAreas.filter(c => avgs[c.id] >= 1.0 && avgs[c.id] < 1.5).map(c => c.area);
+
+  function insightCard() {
+    if (!ratedAreas.length) return '';
+    const rows = [];
+    if (strongAreas.length) {
+      rows.push(`<div class="insight-row">
+        <span class="insight-dot" style="background:var(--green)"></span>
+        <div class="insight-text"><span class="insight-tag">Strong</span>${esc(strongAreas.join(', '))}</div>
+      </div>`);
+    }
+    if (flagAreas.length) {
+      rows.push(`<div class="insight-row">
+        <span class="insight-dot" style="background:var(--red)"></span>
+        <div class="insight-text"><span class="insight-tag">Flag</span>${esc(flagAreas.join(', '))}</div>
+      </div>`);
+    } else if (devAreas.length && !strongAreas.length) {
+      rows.push(`<div class="insight-row">
+        <span class="insight-dot" style="background:var(--yellow)"></span>
+        <div class="insight-text"><span class="insight-tag">Watch</span>${esc(devAreas.slice(0, 2).join(', '))}</div>
+      </div>`);
+    }
+    if (!rows.length) return '';
+    return `<div class="insight-card">${rows.join('')}</div>`;
+  }
+
+  // Group sessions by date
   const grouped = {};
   [...filtered].reverse().forEach(s => {
     if (!grouped[s.date]) grouped[s.date] = [];
@@ -582,10 +617,10 @@ function viewHistory(data) {
   });
 
   const sessionRows = Object.entries(grouped).map(([date, items]) => {
-    const label = new Date(date + 'T12:00:00').toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric' });
+    const dateLabel = new Date(date + 'T12:00:00').toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric' });
     return `
       <div class="history-day">
-        <div class="history-date">${label}</div>
+        <div class="history-date">${dateLabel}</div>
         ${items.map(s => {
           const verdict = calcVerdict(s.ratings);
           const chips   = ratingChips(s.ratings, s.subject);
@@ -617,9 +652,9 @@ function viewHistory(data) {
       </div>
 
       <div class="filter-row">
-        ${[['12h','12h'],['today','Today'],['week','Week'],['month','Month'],['all','All']].map(([f, label]) => `
+        ${[['12h','12h'],['today','Today'],['week','Week'],['month','Month'],['all','All']].map(([f, lbl]) => `
           <button class="filter-btn${filter === f ? ' active' : ''}" onclick="switchHistFilter('${f}')">
-            ${label}
+            ${lbl}
           </button>`).join('')}
       </div>
 
@@ -641,6 +676,8 @@ function viewHistory(data) {
           </div>` : ''}
         </div>
 
+        ${insightCard()}
+
         <div class="area-bars">
           ${criteria.map(c => {
             const avg = avgs[c.id];
@@ -649,11 +686,13 @@ function viewHistory(data) {
             const col = avgToColor(avg);
             return `
               <div class="area-bar-row">
-                <span class="area-bar-label">${esc(c.area)}</span>
+                <div class="area-bar-header">
+                  <span class="area-bar-label">${esc(c.area)}</span>
+                  <span class="area-bar-val" style="color:${col.text}">${esc(avgToLabel(avg))}</span>
+                </div>
                 <div class="area-bar-track">
                   <div class="area-bar-fill" style="width:${pct}%;background:${col.text}"></div>
                 </div>
-                <span class="area-bar-val" style="color:${col.text}">${esc(avgToLabel(avg))}</span>
               </div>`;
           }).filter(Boolean).join('')}
         </div>
@@ -788,7 +827,25 @@ async function deleteSession(id) {
 }
 
 async function wipeData() {
-  if (!confirm('Wipe ALL sessions? This cannot be undone.')) return;
+  const btn = document.querySelector('[onclick="wipeData()"]');
+  if (!btn) return;
+  if (btn.dataset.confirm !== '1') {
+    btn.dataset.confirm = '1';
+    btn.textContent = 'Tap again to confirm';
+    btn.style.background = 'rgba(255,69,58,0.3)';
+    btn.style.borderColor = 'var(--red)';
+    setTimeout(() => {
+      if (btn.dataset.confirm === '1') {
+        btn.dataset.confirm = '';
+        btn.textContent = 'Wipe';
+        btn.style.background = '';
+        btn.style.borderColor = '';
+      }
+    }, 3000);
+    return;
+  }
+  btn.textContent = 'Wiping…';
+  btn.disabled = true;
   state.data = emptyData();
   await saveData(state.data);
   goHome();

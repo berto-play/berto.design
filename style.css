@@ -190,10 +190,10 @@ input:focus, textarea:focus { border-color: var(--accent); }
   width: 80px;
   cursor: pointer;
   font-family: inherit;
-  transition: background 0.1s;
+  transition: background 0.1s, transform 0.1s;
 }
 
-.key:active { background: var(--surface2); }
+.key:active, .key.pressed { background: var(--surface2); transform: scale(0.92); }
 .key.invisible { visibility: hidden; pointer-events: none; }
 
 /* ── Home ───────────────────────────────────────────── */
@@ -662,22 +662,25 @@ input:focus, textarea:focus { border-color: var(--accent); }
 
 .area-bar-row {
   display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.area-bar-header {
+  display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
 }
 
 .area-bar-label {
-  font-size: 12px;
-  color: var(--text2);
-  width: 110px;
-  flex-shrink: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 13px;
+  color: var(--text);
+  flex: 1;
 }
 
 .area-bar-track {
-  flex: 1;
+  width: 100%;
   height: 6px;
   background: var(--surface2);
   border-radius: 3px;
@@ -694,9 +697,45 @@ input:focus, textarea:focus { border-color: var(--accent); }
 .area-bar-val {
   font-size: 11px;
   font-weight: 700;
-  width: 72px;
-  text-align: right;
   flex-shrink: 0;
+}
+
+/* ── Insight callout ────────────────────────────────── */
+
+.insight-card {
+  background: var(--surface);
+  border-radius: var(--r);
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.insight-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.insight-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.insight-text {
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.4;
+}
+
+.insight-tag {
+  font-weight: 700;
+  color: var(--text);
+  margin-right: 5px;
 }
 
 .section-label {
