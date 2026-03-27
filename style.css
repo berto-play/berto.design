@@ -628,7 +628,80 @@ input:focus, textarea:focus { border-color: var(--accent); }
 .history-list { flex: 1; }
 .history-day { margin-bottom: 20px; }
 
-/* Subject tab strip */
+/* ── Health cards (dashboard overview) ──────────────── */
+
+.health-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.health-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 16px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.health-card:active { border-color: var(--accent); }
+
+.hc-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.hc-left { display: flex; flex-direction: column; gap: 3px; }
+.hc-role {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text2);
+}
+.hc-name { font-size: 20px; font-weight: 700; }
+.hc-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+}
+.hc-verdict { font-size: 15px; font-weight: 700; }
+.hc-count   { font-size: 11px; color: var(--text2); }
+
+.hc-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.hc-bar-track {
+  flex: 1;
+  height: 6px;
+  background: var(--surface2);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.hc-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+  min-width: 4px;
+}
+.hc-avg-label {
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+  width: 72px;
+  text-align: right;
+}
+.hc-no-data {
+  font-size: 12px;
+  color: var(--text2);
+  font-style: italic;
+}
+
+/* Subject tab strip — now unused but kept for report view */
 .dash-subject-tabs {
   display: flex;
   gap: 6px;

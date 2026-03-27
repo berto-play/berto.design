@@ -114,6 +114,7 @@ const state = {
   reportTab: 'dr',
   histTab: 'dr',
   histFilter: 'all',
+  histDetail: null,   // null = overview, subjectId = drill-down
 };
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
@@ -565,58 +566,13 @@ function viewAssess(subjectId) {
   `);
 }
 
-function viewHistory(data) {
-  const tab      = state.histTab;
-  const filter   = state.histFilter;
-  const filtered = filterSessions(data.sessions, tab, filter);
-  const avgs     = areaAverages(filtered, tab);
-  const criteria = CRITERIA[tab];
-  const labels   = getLabels();
-
-  // Summary stats
-  const days       = new Set(filtered.map(s => s.date)).size;
-  const overallAvg = Object.values(avgs).length
-    ? Object.values(avgs).reduce((a, b) => a + b, 0) / Object.values(avgs).length
-    : null;
-
-  // Insight callout — surface strongest and weakest areas
-  const ratedAreas  = criteria.filter(c => avgs[c.id] !== undefined);
-  const strongAreas = ratedAreas.filter(c => avgs[c.id] >= 2.5).map(c => c.area);
-  const flagAreas   = ratedAreas.filter(c => avgs[c.id] < 1.0).map(c => c.area);
-  const devAreas    = ratedAreas.filter(c => avgs[c.id] >= 1.0 && avgs[c.id] < 1.5).map(c => c.area);
-
-  function insightCard() {
-    if (!ratedAreas.length) return '';
-    const rows = [];
-    if (strongAreas.length) {
-      rows.push(`<div class="insight-row">
-        <span class="insight-dot" style="background:var(--green)"></span>
-        <div class="insight-text"><span class="insight-tag">Strong</span>${esc(strongAreas.join(', '))}</div>
-      </div>`);
-    }
-    if (flagAreas.length) {
-      rows.push(`<div class="insight-row">
-        <span class="insight-dot" style="background:var(--red)"></span>
-        <div class="insight-text"><span class="insight-tag">Flag</span>${esc(flagAreas.join(', '))}</div>
-      </div>`);
-    } else if (devAreas.length && !strongAreas.length) {
-      rows.push(`<div class="insight-row">
-        <span class="insight-dot" style="background:var(--yellow)"></span>
-        <div class="insight-text"><span class="insight-tag">Watch</span>${esc(devAreas.slice(0, 2).join(', '))}</div>
-      </div>`);
-    }
-    if (!rows.length) return '';
-    return `<div class="insight-card">${rows.join('')}</div>`;
-  }
-
-  // Group sessions by date
+function buildSessionRows(filtered) {
   const grouped = {};
   [...filtered].reverse().forEach(s => {
     if (!grouped[s.date]) grouped[s.date] = [];
     grouped[s.date].push(s);
   });
-
-  const sessionRows = Object.entries(grouped).map(([date, items]) => {
+  return Object.entries(grouped).map(([date, items]) => {
     const dateLabel = new Date(date + 'T12:00:00').toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric' });
     return `
       <div class="history-day">
@@ -636,15 +592,81 @@ function viewHistory(data) {
         }).join('')}
       </div>`;
   }).join('');
+}
 
-  const subj          = SUBJECTS.find(s => s.id === tab);
-  const codeName      = labels[tab] || defaultCodeName(tab);
-  const allSubjSess   = data.sessions.filter(s => s.subject === tab);
-  const totalSessions = allSubjSess.length;
-  const latestVerdict = allSubjSess.length ? calcVerdict(allSubjSess[allSubjSess.length - 1].ratings) : null;
-  const recentDots    = allSubjSess.slice(-6).map(s => {
-    const v = calcVerdict(s.ratings);
-    return `<span class="trend-dot" style="background:${verdictColor(v)}"></span>`;
+function buildInsightCard(avgs, criteria) {
+  const ratedAreas  = criteria.filter(c => avgs[c.id] !== undefined);
+  if (!ratedAreas.length) return '';
+  const strongAreas = ratedAreas.filter(c => avgs[c.id] >= 2.5).map(c => c.area);
+  const flagAreas   = ratedAreas.filter(c => avgs[c.id] < 1.0).map(c => c.area);
+  const devAreas    = ratedAreas.filter(c => avgs[c.id] >= 1.0 && avgs[c.id] < 1.5).map(c => c.area);
+  const rows = [];
+  if (strongAreas.length) rows.push(`<div class="insight-row">
+    <span class="insight-dot" style="background:var(--green)"></span>
+    <div class="insight-text"><span class="insight-tag">Strong</span>${esc(strongAreas.join(', '))}</div>
+  </div>`);
+  if (flagAreas.length) rows.push(`<div class="insight-row">
+    <span class="insight-dot" style="background:var(--red)"></span>
+    <div class="insight-text"><span class="insight-tag">Flag</span>${esc(flagAreas.join(', '))}</div>
+  </div>`);
+  else if (devAreas.length && !strongAreas.length) rows.push(`<div class="insight-row">
+    <span class="insight-dot" style="background:var(--yellow)"></span>
+    <div class="insight-text"><span class="insight-tag">Watch</span>${esc(devAreas.slice(0, 2).join(', '))}</div>
+  </div>`);
+  return rows.length ? `<div class="insight-card">${rows.join('')}</div>` : '';
+}
+
+function filterRow(filter) {
+  return `<div class="filter-row">
+    ${[['12h','12h'],['today','Today'],['week','Week'],['month','Month'],['all','All']].map(([f, lbl]) =>
+      `<button class="filter-btn${filter === f ? ' active' : ''}" onclick="switchHistFilter('${f}')">${lbl}</button>`
+    ).join('')}
+  </div>`;
+}
+
+function viewHistory(data) {
+  if (state.histDetail) { viewHistoryDetail(data); return; }
+
+  const filter = state.histFilter;
+  const labels = getLabels();
+
+  const cards = SUBJECTS.map(s => {
+    const filtered    = filterSessions(data.sessions, s.id, filter);
+    const avgs        = areaAverages(filtered, s.id);
+    const overallAvg  = Object.values(avgs).length
+      ? Object.values(avgs).reduce((a, b) => a + b, 0) / Object.values(avgs).length : null;
+    const latest      = latestSession(data.sessions, s.id);
+    const verdict     = latest ? calcVerdict(latest.ratings) : null;
+    const codeName    = labels[s.id] || defaultCodeName(s.id);
+    const recentDots  = data.sessions.filter(x => x.subject === s.id).slice(-6).map(sess => {
+      const v = calcVerdict(sess.ratings);
+      return `<span class="trend-dot" style="background:${verdictColor(v)}"></span>`;
+    }).join('');
+
+    return `
+      <div class="health-card" onclick="drillDown('${s.id}')">
+        <div class="hc-top">
+          <div class="hc-left">
+            <div class="hc-role">${esc(s.role)}</div>
+            <div class="hc-name">${esc(codeName)}</div>
+          </div>
+          <div class="hc-right">
+            ${verdict
+              ? `<div class="hc-verdict" style="color:${verdictColor(verdict)}">${verdictLabel(verdict)}</div>`
+              : `<div class="hc-verdict muted">No data</div>`}
+            <div class="hc-count">${filtered.length} session${filtered.length !== 1 ? 's' : ''}</div>
+          </div>
+        </div>
+        ${overallAvg !== null ? `
+          <div class="hc-bar-row">
+            <div class="hc-bar-track">
+              <div class="hc-bar-fill" style="width:${Math.round((overallAvg/3)*100)}%;background:${avgToColor(overallAvg).text}"></div>
+            </div>
+            <span class="hc-avg-label" style="color:${avgToColor(overallAvg).text}">${avgToLabel(overallAvg)}</span>
+          </div>
+        ` : `<div class="hc-no-data">No sessions in this period</div>`}
+        ${recentDots ? `<div class="trend-dots" style="margin-top:8px">${recentDots}</div>` : ''}
+      </div>`;
   }).join('');
 
   render(`
@@ -653,40 +675,43 @@ function viewHistory(data) {
         <button class="back-btn" onclick="goHome()">←</button>
         <span>Dashboard</span>
       </div>
+      ${filterRow(filter)}
+      <div class="health-cards">${cards}</div>
+      <nav class="bottom-nav">
+        <button class="nav-btn" onclick="goHome()">Home</button>
+        <button class="nav-btn active">Dashboard</button>
+        <button class="nav-btn" onclick="goReport()">Report</button>
+        <button class="nav-btn" onclick="goSettings()">Settings</button>
+      </nav>
+    </div>
+  `);
+}
 
-      <div class="dash-subject-tabs">
-        ${SUBJECTS.map(s => {
-          const name = labels[s.id] || defaultCodeName(s.id);
-          return `<button class="dash-stab${tab === s.id ? ' active' : ''}" onclick="switchHistTab('${s.id}')">
-            <span class="dst-name">${esc(name)}</span>
-            <span class="dst-role">${esc(s.role)}</span>
-          </button>`;
-        }).join('')}
-      </div>
+function viewHistoryDetail(data) {
+  const tab      = state.histDetail;
+  const filter   = state.histFilter;
+  const filtered = filterSessions(data.sessions, tab, filter);
+  const avgs     = areaAverages(filtered, tab);
+  const criteria = CRITERIA[tab];
+  const labels   = getLabels();
+  const codeName = labels[tab] || defaultCodeName(tab);
+  const subj     = SUBJECTS.find(s => s.id === tab);
 
-      <div class="dash-who">
-        <div class="dash-who-left">
-          <div class="dash-who-role">${esc(subj?.role || '')}</div>
-          <div class="dash-who-name">${esc(codeName)}</div>
-          ${recentDots ? `<div class="trend-dots">${recentDots}</div>` : ''}
+  const days       = new Set(filtered.map(s => s.date)).size;
+  const overallAvg = Object.values(avgs).length
+    ? Object.values(avgs).reduce((a, b) => a + b, 0) / Object.values(avgs).length : null;
+
+  render(`
+    <div class="screen history">
+      <div class="screen-header">
+        <button class="back-btn" onclick="backToHealth()">←</button>
+        <div>
+          <div style="font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:0.8px">${esc(subj?.role || '')}</div>
+          <div style="font-weight:700">${esc(codeName)}</div>
         </div>
-        <div class="dash-who-right">
-          ${latestVerdict ? `
-            <div class="dash-who-verdict" style="color:${verdictColor(latestVerdict)}">${verdictLabel(latestVerdict)}</div>
-            <div class="dash-who-sub">${totalSessions} session${totalSessions !== 1 ? 's' : ''} total</div>
-          ` : `<div class="dash-who-sub muted">No sessions yet</div>`}
-        </div>
       </div>
-
-      <div class="filter-row">
-        ${[['12h','12h'],['today','Today'],['week','Week'],['month','Month'],['all','All']].map(([f, lbl]) => `
-          <button class="filter-btn${filter === f ? ' active' : ''}" onclick="switchHistFilter('${f}')">
-            ${lbl}
-          </button>`).join('')}
-      </div>
-
+      ${filterRow(filter)}
       ${filtered.length === 0 ? `<p class="empty">No sessions in this period.</p>` : `
-
         <div class="dash-summary">
           <div class="dash-stat">
             <span class="dash-num">${filtered.length}</span>
@@ -702,9 +727,7 @@ function viewHistory(data) {
             <span class="dash-label">overall</span>
           </div>` : ''}
         </div>
-
-        ${insightCard()}
-
+        ${buildInsightCard(avgs, criteria)}
         <div class="area-bars">
           ${criteria.map(c => {
             const avg = avgs[c.id];
@@ -723,11 +746,9 @@ function viewHistory(data) {
               </div>`;
           }).filter(Boolean).join('')}
         </div>
-
         <div class="section-label">Sessions</div>
-        <div class="history-list">${sessionRows}</div>
+        <div class="history-list">${buildSessionRows(filtered)}</div>
       `}
-
       <nav class="bottom-nav">
         <button class="nav-btn" onclick="goHome()">Home</button>
         <button class="nav-btn active">Dashboard</button>
@@ -736,6 +757,17 @@ function viewHistory(data) {
       </nav>
     </div>
   `);
+}
+
+function drillDown(subjectId) {
+  state.histDetail = subjectId;
+  state.histTab    = subjectId;
+  viewHistory(state.data);
+}
+
+function backToHealth() {
+  state.histDetail = null;
+  viewHistory(state.data);
 }
 
 function viewReport(data) {
