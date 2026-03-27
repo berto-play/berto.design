@@ -637,6 +637,16 @@ function viewHistory(data) {
       </div>`;
   }).join('');
 
+  const subj          = SUBJECTS.find(s => s.id === tab);
+  const codeName      = labels[tab] || defaultCodeName(tab);
+  const allSubjSess   = data.sessions.filter(s => s.subject === tab);
+  const totalSessions = allSubjSess.length;
+  const latestVerdict = allSubjSess.length ? calcVerdict(allSubjSess[allSubjSess.length - 1].ratings) : null;
+  const recentDots    = allSubjSess.slice(-6).map(s => {
+    const v = calcVerdict(s.ratings);
+    return `<span class="trend-dot" style="background:${verdictColor(v)}"></span>`;
+  }).join('');
+
   render(`
     <div class="screen history">
       <div class="screen-header">
@@ -644,11 +654,28 @@ function viewHistory(data) {
         <span>Dashboard</span>
       </div>
 
-      <div class="report-tabs">
-        ${SUBJECTS.map(s => `
-          <button class="report-tab${tab === s.id ? ' active' : ''}" onclick="switchHistTab('${s.id}')">
-            ${esc(labels[s.id] || s.role.split(' ')[0])}
-          </button>`).join('')}
+      <div class="dash-subject-tabs">
+        ${SUBJECTS.map(s => {
+          const name = labels[s.id] || defaultCodeName(s.id);
+          return `<button class="dash-stab${tab === s.id ? ' active' : ''}" onclick="switchHistTab('${s.id}')">
+            <span class="dst-name">${esc(name)}</span>
+            <span class="dst-role">${esc(s.role)}</span>
+          </button>`;
+        }).join('')}
+      </div>
+
+      <div class="dash-who">
+        <div class="dash-who-left">
+          <div class="dash-who-role">${esc(subj?.role || '')}</div>
+          <div class="dash-who-name">${esc(codeName)}</div>
+          ${recentDots ? `<div class="trend-dots">${recentDots}</div>` : ''}
+        </div>
+        <div class="dash-who-right">
+          ${latestVerdict ? `
+            <div class="dash-who-verdict" style="color:${verdictColor(latestVerdict)}">${verdictLabel(latestVerdict)}</div>
+            <div class="dash-who-sub">${totalSessions} session${totalSessions !== 1 ? 's' : ''} total</div>
+          ` : `<div class="dash-who-sub muted">No sessions yet</div>`}
+        </div>
       </div>
 
       <div class="filter-row">
