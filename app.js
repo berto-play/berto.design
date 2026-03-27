@@ -138,7 +138,7 @@ const state = {
   draft: null,
   reportTab: 'dr',
   histTab: 'dr',
-  histFilter: 'all',
+  histFilter: 'today',
   histDetail: null,   // null = overview, subjectId = drill-down
 };
 
@@ -283,11 +283,9 @@ function filterSessions(sessions, subjectId, filter) {
   const now      = new Date();
   const todayStr = now.toISOString().split('T')[0];
   let filtered   = sessions.filter(s => s.subject === subjectId);
-  if (filter === '12h') {
-    const cutoff = new Date(now - 12 * 3600000).getTime();
+  if (filter === 'today') {
+    const cutoff = new Date(now - 24 * 3600000).getTime();
     filtered = filtered.filter(s => parseInt(s.id) >= cutoff);
-  } else if (filter === 'today') {
-    filtered = filtered.filter(s => s.date === todayStr);
   } else if (filter === 'week') {
     const cutoff = new Date(now - 7 * 86400000).toISOString().split('T')[0];
     filtered = filtered.filter(s => s.date >= cutoff);
@@ -683,7 +681,7 @@ function buildSparkline(sessions, subjectId) {
 
 function filterRow(filter) {
   return `<div class="filter-row">
-    ${[['12h','12h'],['today','Today'],['week','Week'],['month','Month'],['all','All']].map(([f, lbl]) =>
+    ${[['today','Today'],['week','Week'],['month','Month'],['all','All']].map(([f, lbl]) =>
       `<button class="filter-btn${filter === f ? ' active' : ''}" onclick="switchHistFilter('${f}')">${lbl}</button>`
     ).join('')}
   </div>`;
@@ -1047,7 +1045,7 @@ async function saveAssess(subjectId) {
 
 function switchTab(id) { state.reportTab = id; viewReport(state.data); }
 function switchHistTab(id) { state.histTab = id; viewHistory(state.data); }
-function switchHistFilter(f) { state.histFilter = f; viewHistory(state.data); }
+function switchHistFilter(f) { state.histFilter = f === '12h' ? 'today' : f; viewHistory(state.data); }
 
 async function doCopy() {
   const text = document.getElementById('report-text')?.textContent || '';
