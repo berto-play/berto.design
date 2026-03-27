@@ -563,9 +563,49 @@ input:focus, textarea:focus { border-color: var(--accent); }
   transition: width 0.3s ease;
 }
 
-/* ── Area list (replaces accordion) ─────────────────── */
+/* ── Area list (mobile — tap to expand bottom sheet) ─── */
 
 .area-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+
+/* ── Desktop expanded area cards ────────────────────── */
+
+.desktop-area-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.desktop-area-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 18px 18px 14px;
+}
+
+.desktop-area-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.desktop-area-header .area-row-text { flex: 1; min-width: 0; }
+.desktop-area-header .area-row-q { white-space: normal; }
+
+.desktop-signals {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 12px;
+  padding-left: 24px;
+}
+
+.desktop-ratings {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-left: 24px;
+}
 
 .area-row {
   width: 100%;

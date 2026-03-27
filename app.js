@@ -526,8 +526,55 @@ function viewAssess(subjectId) {
   const label     = subjectLabel(subjectId);
   const rated     = Object.values(draft.ratings).filter(Boolean).length;
   const pct       = Math.round((rated / criteria.length) * 100);
+  const isDesktop = window.innerWidth >= 768;
 
-  const openArea = draft.expanded ? criteria.find(c => c.id === draft.expanded) : null;
+  const openArea = (!isDesktop && draft.expanded) ? criteria.find(c => c.id === draft.expanded) : null;
+
+  // Desktop: all areas fully expanded inline — no interaction needed
+  const desktopAreas = isDesktop ? criteria.map(c => {
+    const rating = draft.ratings[c.id];
+    const col    = rating ? RC[rating] : null;
+    return `
+      <div class="desktop-area-card${rating ? ' has-rating' : ''}">
+        <div class="desktop-area-header">
+          <span class="area-dot" style="background:${col ? col.dot : 'var(--border)'}"></span>
+          <div class="area-row-text">
+            <span class="area-row-name">${esc(c.area)}</span>
+            <span class="area-row-q">${esc(c.question)}</span>
+          </div>
+          ${rating ? `<span class="area-row-rating" style="color:${col.text};background:${col.bg}">${esc(rating)}</span>` : ''}
+        </div>
+        <div class="desktop-signals">
+          ${c.signals.map(s => `<div class="sheet-signal">→ ${esc(s)}</div>`).join('')}
+        </div>
+        <div class="desktop-ratings">
+          ${RATINGS.map(r => {
+            const active = draft.ratings[c.id] === r;
+            const rc = RC[r];
+            return `<button class="rating-btn${active ? ' active' : ''}"
+              style="${active ? `color:${rc.text};background:${rc.bg};border-color:${rc.text}` : ''}"
+              onclick="rateArea('${subjectId}','${c.id}','${r}')">${esc(r)}</button>`;
+          }).join('')}
+        </div>
+      </div>`;
+  }).join('') : '';
+
+  // Mobile: tap row → bottom sheet slides up
+  const mobileAreas = !isDesktop ? criteria.map(c => {
+    const rating = draft.ratings[c.id];
+    const col    = rating ? RC[rating] : null;
+    return `
+      <button class="area-row" onclick="toggleCard('${c.id}')">
+        <span class="area-dot" style="background:${col ? col.dot : 'var(--border)'}"></span>
+        <div class="area-row-text">
+          <span class="area-row-name">${esc(c.area)}</span>
+          <span class="area-row-q">${esc(c.question)}</span>
+        </div>
+        ${rating
+          ? `<span class="area-row-rating" style="color:${col.text};background:${col.bg}">${esc(rating)}</span>`
+          : `<span class="area-row-chevron">›</span>`}
+      </button>`;
+  }).join('') : '';
 
   render(`
     <div class="screen assess">
@@ -547,23 +594,10 @@ function viewAssess(subjectId) {
         <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
       ` : ''}
 
-      <div class="area-list">
-        ${criteria.map(c => {
-          const rating = draft.ratings[c.id];
-          const col    = rating ? RC[rating] : null;
-          return `
-            <button class="area-row" onclick="toggleCard('${c.id}')">
-              <span class="area-dot" style="background:${col ? col.dot : 'var(--border)'}"></span>
-              <div class="area-row-text">
-                <span class="area-row-name">${esc(c.area)}</span>
-                <span class="area-row-q">${esc(c.question)}</span>
-              </div>
-              ${rating
-                ? `<span class="area-row-rating" style="color:${col.text};background:${col.bg}">${esc(rating)}</span>`
-                : `<span class="area-row-chevron">›</span>`}
-            </button>`;
-        }).join('')}
-      </div>
+      ${isDesktop
+        ? `<div class="desktop-area-list">${desktopAreas}</div>`
+        : `<div class="area-list">${mobileAreas}</div>`
+      }
 
       <textarea id="assess-note" class="note-input" maxlength="200"
         placeholder="Optional note — one line">${esc(draft.note || '')}</textarea>
