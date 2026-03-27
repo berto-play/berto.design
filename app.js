@@ -560,7 +560,7 @@ function viewAssess(subjectId) {
               </div>
               ${rating
                 ? `<span class="area-row-rating" style="color:${col.text};background:${col.bg}">${esc(rating)}</span>`
-                : `<span class="area-row-dash">—</span>`}
+                : `<span class="area-row-chevron">›</span>`}
             </button>`;
         }).join('')}
       </div>

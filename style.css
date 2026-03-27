@@ -565,7 +565,7 @@ input:focus, textarea:focus { border-color: var(--accent); }
 
 /* ── Area list (replaces accordion) ─────────────────── */
 
-.area-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+.area-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
 
 .area-row {
   width: 100%;
@@ -574,8 +574,8 @@ input:focus, textarea:focus { border-color: var(--accent); }
   border-radius: var(--r);
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px;
+  gap: 14px;
+  padding: 16px 14px;
   cursor: pointer;
   font-family: inherit;
   text-align: left;
@@ -585,8 +585,8 @@ input:focus, textarea:focus { border-color: var(--accent); }
 .area-row:active { border-color: var(--accent); }
 
 .area-dot {
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   flex-shrink: 0;
   transition: background 0.2s;
@@ -596,33 +596,33 @@ input:focus, textarea:focus { border-color: var(--accent); }
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   min-width: 0;
 }
-.area-row-name { font-size: 15px; font-weight: 600; }
+.area-row-name { font-size: 17px; font-weight: 600; }
 .area-row-q {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text2);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .area-row-rating {
-  font-size: 11px;
-  font-weight: 600;
-  padding: 3px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
   border-radius: 12px;
   white-space: nowrap;
   flex-shrink: 0;
 }
-.area-row-dash { font-size: 16px; color: var(--border); flex-shrink: 0; }
+.area-row-chevron { font-size: 16px; color: var(--border); flex-shrink: 0; }
 
 /* ── Bottom sheet ────────────────────────────────────── */
 
 .sheet-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.55);
+  background: rgba(0,0,0,0.6);
   z-index: 200;
 }
 
@@ -633,9 +633,9 @@ input:focus, textarea:focus { border-color: var(--accent); }
   transform: translateX(-50%);
   width: 100%;
   max-width: 480px;
-  background: var(--surface);
+  background: #2c2c2e;
   border-radius: 20px 20px 0 0;
-  padding: 12px 16px max(32px, env(safe-area-inset-bottom));
+  padding: 12px 18px max(36px, env(safe-area-inset-bottom));
   z-index: 201;
   animation: slideUp 0.22s ease;
 }
@@ -646,11 +646,11 @@ input:focus, textarea:focus { border-color: var(--accent); }
 }
 
 .sheet-handle {
-  width: 36px;
+  width: 40px;
   height: 4px;
   border-radius: 2px;
   background: var(--border);
-  margin: 0 auto 16px;
+  margin: 0 auto 18px;
 }
 
 .sheet-header {
@@ -658,23 +658,23 @@ input:focus, textarea:focus { border-color: var(--accent); }
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
-.sheet-area-name { font-size: 18px; font-weight: 700; margin-bottom: 3px; }
-.sheet-area-q    { font-size: 13px; color: var(--text2); }
+.sheet-area-name { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+.sheet-area-q    { font-size: 14px; color: var(--text2); line-height: 1.4; }
 
 .sheet-close {
-  background: var(--surface2);
+  background: rgba(255,255,255,0.1);
   border: none;
   border-radius: 50%;
   color: var(--text2);
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 14px;
   flex-shrink: 0;
   font-family: inherit;
 }
@@ -682,12 +682,12 @@ input:focus, textarea:focus { border-color: var(--accent); }
 .sheet-signals {
   display: flex;
   flex-direction: column;
-  gap: 7px;
-  margin-bottom: 16px;
-  padding-bottom: 16px;
+  gap: 9px;
+  margin-bottom: 18px;
+  padding-bottom: 18px;
   border-bottom: 1px solid var(--border);
 }
-.sheet-signal { font-size: 13px; color: var(--text2); line-height: 1.4; }
+.sheet-signal { font-size: 14px; color: #aeaeb2; line-height: 1.5; }
 
 .sheet-ratings {
   display: grid;
@@ -700,9 +700,9 @@ input:focus, textarea:focus { border-color: var(--accent); }
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   color: var(--text2);
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 500;
-  padding: 12px 8px;
+  padding: 16px 8px;
   cursor: pointer;
   font-family: inherit;
   transition: all 0.15s;
