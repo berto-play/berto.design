@@ -314,7 +314,23 @@ function downloadReport(text, subjectId) {
   URL.revokeObjectURL(url);
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+function trendDots(sessions, subjectId) {
+  return sessions.filter(s => s.subject === subjectId).slice(-6).map(s => {
+    const v = calcVerdict(s.ratings);
+    return `<span class="trend-dot" style="background:${verdictColor(v)}"></span>`;
+  }).join('');
+}
+
+function ratingChips(ratings, subjectId) {
+  return CRITERIA[subjectId].map(c => {
+    const r = ratings[c.id];
+    if (!r) return '';
+    const col = RC[r];
+    return `<span class="area-chip" style="color:${col.text};background:${col.bg}">${esc(c.area.split(' ')[0])}: ${esc(r)}</span>`;
+  }).filter(Boolean).join('');
+}
+
+
 
 function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -398,12 +414,14 @@ function viewHome(data) {
           const verdict = latest ? calcVerdict(latest.ratings) : null;
           const count   = data.sessions.filter(x => x.subject === s.id).length;
           const label   = labels[s.id] || defaultCodeName(s.id);
+          const dots    = trendDots(data.sessions, s.id);
           return `
             <div class="subject-card" onclick="startAssess('${s.id}')">
               <div class="subject-card-left">
                 <div class="subject-role">${esc(s.role)}</div>
                 <div class="subject-name">${esc(label)}</div>
                 <div class="subject-meta">${count} session${count !== 1 ? 's' : ''}${latest ? ' · ' + latest.date : ''}</div>
+                ${dots ? `<div class="trend-dots">${dots}</div>` : ''}
               </div>
               <div class="subject-card-right">
                 ${verdict ? `<div class="verdict-chip" style="color:${verdictColor(verdict)};border-color:${verdictColor(verdict)}">${verdictLabel(verdict)}</div>` : '<div class="verdict-chip muted">No data</div>'}
@@ -509,13 +527,16 @@ function viewHistory(data) {
           const rated   = Object.values(s.ratings).filter(Boolean).length;
           const verdict = calcVerdict(s.ratings);
           const subj    = SUBJECTS.find(x => x.id === s.subject);
+          const chips = ratingChips(s.ratings, s.subject);
           return `
             <div class="history-item">
-              <span class="role-badge">${esc(subj?.role || s.subject)}</span>
-              <span class="hist-name">${esc(subjectLabel(s.subject))}</span>
-              ${verdict ? `<span class="hist-verdict" style="color:${verdictColor(verdict)}">${verdictLabel(verdict)}</span>` : ''}
-              <span class="hist-count muted">${rated} area${rated !== 1 ? 's' : ''}</span>
-              <button class="delete-btn" onclick="deleteSession('${s.id}')" title="Delete">✕</button>
+              <div class="hist-row">
+                <span class="role-badge">${esc(subj?.role || s.subject)}</span>
+                <span class="hist-name">${esc(subjectLabel(s.subject))}</span>
+                ${verdict ? `<span class="hist-verdict" style="color:${verdictColor(verdict)}">${verdictLabel(verdict)}</span>` : ''}
+                <button class="delete-btn" onclick="deleteSession('${s.id}')" title="Delete">✕</button>
+              </div>
+              ${chips ? `<div class="chips-row">${chips}</div>` : ''}
               ${s.note ? `<span class="hist-note">${esc(s.note)}</span>` : ''}
             </div>`;
         }).join('')}
@@ -566,13 +587,29 @@ function viewReport(data) {
         ${verdict ? `<span class="verdict-chip" style="color:${verdictColor(verdict)};border-color:${verdictColor(verdict)}">${verdictLabel(verdict)}</span>` : ''}
       </div>
 
+      ${(() => {
+        const pattern = patternByArea(data.sessions, tab);
+        const criteria = CRITERIA[tab];
+        if (!Object.keys(pattern).length) return '<p class="muted small" style="margin-bottom:12px">No sessions logged yet.</p>';
+        return `<div class="pattern-grid">
+          ${criteria.map(c => {
+            const r = pattern[c.id];
+            if (!r) return '';
+            const col = RC[r];
+            return `<div class="pattern-row">
+              <span class="pattern-area">${esc(c.area)}</span>
+              <span class="pattern-chip" style="color:${col.text};background:${col.bg};border-color:${col.text}">${esc(r)}</span>
+            </div>`;
+          }).filter(Boolean).join('')}
+        </div>`;
+      })()}
+
       <pre id="report-text" class="report-text">${esc(text)}</pre>
 
       <div class="export-row">
         <button class="btn-secondary" onclick="doCopy()">Copy</button>
         <button class="btn-secondary" onclick="doDownload()">Download .txt</button>
       </div>
-      <button class="btn-danger" style="width:100%;margin-top:8px" onclick="wipeData()">Wipe all data</button>
 
       <nav class="bottom-nav">
         <button class="nav-btn" onclick="goHome()">Home</button>
@@ -764,6 +801,15 @@ function viewSettings() {
         }
         <p id="settings-msg" class="hidden" style="color:var(--green);font-size:14px;margin-top:8px">Saved.</p>
         <button class="btn-primary" onclick="saveSettings()">Save</button>
+
+        <div class="form-divider danger-divider">Danger zone</div>
+        <div class="danger-zone">
+          <div class="danger-info">
+            <strong>Wipe all sessions</strong>
+            <p>Permanently deletes every logged session. Code names and settings are kept. This cannot be undone.</p>
+          </div>
+          <button class="btn-danger" onclick="wipeData()">Wipe</button>
+        </div>
       </div>
     </div>
   `);
