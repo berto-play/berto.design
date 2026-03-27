@@ -405,16 +405,18 @@ function viewSetup() {
           <input type="text" id="label_${s.id}" placeholder="e.g. ${defaultCodeName(s.id)}" autocomplete="off" spellcheck="false">
         `).join('')}
 
-        <div class="form-divider">GitHub sync <span class="optional-label">optional</span></div>
-        <label>Personal access token</label>
-        <input type="password" id="gh_token" placeholder="ghp_… or github_pat_…" autocomplete="off">
-        <p class="field-hint">Skip this to use local-only mode — data stays on this device. Add a token later in Settings to enable cross-device sync.</p>
-        <label>Data repo (owner/name)</label>
+        <div class="form-divider">Sync <span class="optional-label">optional — skip to use locally</span></div>
+        <div class="try-it-box">
+          <span class="try-it-icon">💡</span>
+          <p>Leave this blank to try the app — your data saves on this device. You can add a token later in Settings to sync across devices.</p>
+        </div>
+        <label>GitHub token</label>
+        <input type="password" id="gh_token" placeholder="ghp_… (leave blank to skip)" autocomplete="off">
+        <label>Data repo</label>
         <input type="text" id="gh_repo" value="berto-play/berto-log-data" autocomplete="off" spellcheck="false">
 
         <p id="setup-error" class="error hidden"></p>
         <button class="btn-primary" id="setup-btn" onclick="doSetup()">Get started</button>
-        <p class="local-mode-hint muted small">No token? Tap Get started — data saves locally on this device.</p>
       </div>
     </div>
   `);

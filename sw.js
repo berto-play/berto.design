@@ -1,5 +1,5 @@
-const CACHE = 'log-v4';
-const SHELL = ['./', './index.html', './style.css', './app.js', './manifest.json', './icon.svg'];
+const CACHE = 'log-v5';
+const SHELL = ['./index.html', './style.css', './app.js', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)));
@@ -16,8 +16,17 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
+  // Never intercept GitHub API calls
   if (e.request.url.includes('api.github.com')) return;
+
+  // Network first — always try to get fresh files, fall back to cache offline
   e.respondWith(
-    caches.match(e.request).then(r => r || fetch(e.request))
+    fetch(e.request)
+      .then(res => {
+        const clone = res.clone();
+        caches.open(CACHE).then(c => c.put(e.request, clone));
+        return res;
+      })
+      .catch(() => caches.match(e.request))
   );
 });
