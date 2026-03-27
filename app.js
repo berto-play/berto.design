@@ -527,6 +527,8 @@ function viewAssess(subjectId) {
   const rated     = Object.values(draft.ratings).filter(Boolean).length;
   const pct       = Math.round((rated / criteria.length) * 100);
 
+  const openArea = draft.expanded ? criteria.find(c => c.id === draft.expanded) : null;
+
   render(`
     <div class="screen assess">
       <div class="screen-header">
@@ -545,39 +547,21 @@ function viewAssess(subjectId) {
         <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
       ` : ''}
 
-      <div class="accordion-list">
+      <div class="area-list">
         ${criteria.map(c => {
-          const rating  = draft.ratings[c.id];
-          const isOpen  = draft.expanded === c.id;
-          const col     = rating ? RC[rating] : null;
+          const rating = draft.ratings[c.id];
+          const col    = rating ? RC[rating] : null;
           return `
-            <div class="accordion-card${isOpen ? ' open' : ''}">
-              <button class="accordion-head" onclick="toggleCard('${c.id}')">
-                <span class="area-dot" style="background:${col ? col.dot : 'var(--border)'}"></span>
-                <div class="area-text">
-                  <span class="area-name">${esc(c.area)}</span>
-                  <span class="area-q">${esc(c.question)}</span>
-                </div>
-                ${rating ? `<span class="area-rating" style="color:${col.text};background:${col.bg}">${esc(rating)}</span>` : ''}
-                <span class="chevron">${isOpen ? '▲' : '▼'}</span>
-              </button>
-              <div class="accordion-body">
-                <p class="signals-label">Signals</p>
-                <ul class="signals-list">
-                  ${c.signals.map(s => `<li>→ ${esc(s)}</li>`).join('')}
-                </ul>
-                <p class="signals-label">Rate</p>
-                <div class="rating-grid">
-                  ${RATINGS.map(r => {
-                    const active = rating === r;
-                    const rc = RC[r];
-                    return `<button class="rating-btn${active ? ' active' : ''}"
-                      style="${active ? `color:${rc.text};background:${rc.bg};border-color:${rc.text}` : ''}"
-                      onclick="rateArea('${subjectId}','${c.id}','${r}')">${esc(r)}</button>`;
-                  }).join('')}
-                </div>
+            <button class="area-row" onclick="toggleCard('${c.id}')">
+              <span class="area-dot" style="background:${col ? col.dot : 'var(--border)'}"></span>
+              <div class="area-row-text">
+                <span class="area-row-name">${esc(c.area)}</span>
+                <span class="area-row-q">${esc(c.question)}</span>
               </div>
-            </div>`;
+              ${rating
+                ? `<span class="area-row-rating" style="color:${col.text};background:${col.bg}">${esc(rating)}</span>`
+                : `<span class="area-row-dash">—</span>`}
+            </button>`;
         }).join('')}
       </div>
 
@@ -586,6 +570,32 @@ function viewAssess(subjectId) {
       <p id="save-error" class="error hidden"></p>
       <button class="btn-primary${rated === 0 ? ' disabled' : ''}" ${rated === 0 ? 'disabled' : ''}
         id="save-btn" onclick="saveAssess('${subjectId}')">Save session</button>
+
+      ${openArea ? `
+        <div class="sheet-overlay" onclick="toggleCard('${openArea.id}')"></div>
+        <div class="bottom-sheet">
+          <div class="sheet-handle"></div>
+          <div class="sheet-header">
+            <div>
+              <div class="sheet-area-name">${esc(openArea.area)}</div>
+              <div class="sheet-area-q">${esc(openArea.question)}</div>
+            </div>
+            <button class="sheet-close" onclick="toggleCard('${openArea.id}')">✕</button>
+          </div>
+          <div class="sheet-signals">
+            ${openArea.signals.map(s => `<div class="sheet-signal">→ ${esc(s)}</div>`).join('')}
+          </div>
+          <div class="sheet-ratings">
+            ${RATINGS.map(r => {
+              const active = draft.ratings[openArea.id] === r;
+              const rc = RC[r];
+              return `<button class="rating-btn${active ? ' active' : ''}"
+                style="${active ? `color:${rc.text};background:${rc.bg};border-color:${rc.text}` : ''}"
+                onclick="rateArea('${subjectId}','${openArea.id}','${r}')">${esc(r)}</button>`;
+            }).join('')}
+          </div>
+        </div>
+      ` : ''}
     </div>
   `);
 }

@@ -563,33 +563,26 @@ input:focus, textarea:focus { border-color: var(--accent); }
   transition: width 0.3s ease;
 }
 
-/* ── Accordion ──────────────────────────────────────── */
+/* ── Area list (replaces accordion) ─────────────────── */
 
-.accordion-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.area-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
 
-.accordion-card {
+.area-row {
+  width: 100%;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--r);
-  overflow: hidden;
-  transition: border-color 0.15s;
-}
-
-.accordion-card.open { border-color: var(--accent); }
-
-.accordion-head {
-  width: 100%;
-  background: none;
-  border: none;
-  color: var(--text);
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 14px 14px;
+  gap: 12px;
+  padding: 14px;
   cursor: pointer;
   font-family: inherit;
   text-align: left;
+  color: var(--text);
+  transition: border-color 0.15s;
 }
+.area-row:active { border-color: var(--accent); }
 
 .area-dot {
   width: 10px;
@@ -599,31 +592,22 @@ input:focus, textarea:focus { border-color: var(--accent); }
   transition: background 0.2s;
 }
 
-.area-text {
+.area-row-text {
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
 }
-
-.area-name {
-  font-size: 15px;
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.area-q {
+.area-row-name { font-size: 15px; font-weight: 600; }
+.area-row-q {
   font-size: 12px;
   color: var(--text2);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
-.area-rating {
+.area-row-rating {
   font-size: 11px;
   font-weight: 600;
   padding: 3px 8px;
@@ -631,45 +615,84 @@ input:focus, textarea:focus { border-color: var(--accent); }
   white-space: nowrap;
   flex-shrink: 0;
 }
+.area-row-dash { font-size: 16px; color: var(--border); flex-shrink: 0; }
 
-.chevron { font-size: 10px; color: var(--text2); flex-shrink: 0; }
+/* ── Bottom sheet ────────────────────────────────────── */
 
-.accordion-body {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.25s ease;
+.sheet-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 200;
 }
 
-.accordion-card.open .accordion-body { max-height: 360px; }
+.bottom-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  background: var(--surface);
+  border-radius: 20px 20px 0 0;
+  padding: 12px 16px max(32px, env(safe-area-inset-bottom));
+  z-index: 201;
+  animation: slideUp 0.22s ease;
+}
 
-.signals-label {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
+@keyframes slideUp {
+  from { transform: translateX(-50%) translateY(100%); }
+  to   { transform: translateX(-50%) translateY(0);    }
+}
+
+.sheet-handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border);
+  margin: 0 auto 16px;
+}
+
+.sheet-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.sheet-area-name { font-size: 18px; font-weight: 700; margin-bottom: 3px; }
+.sheet-area-q    { font-size: 13px; color: var(--text2); }
+
+.sheet-close {
+  background: var(--surface2);
+  border: none;
+  border-radius: 50%;
   color: var(--text2);
-  padding: 12px 14px 6px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 13px;
+  flex-shrink: 0;
+  font-family: inherit;
 }
 
-.signals-list {
-  list-style: none;
-  padding: 0 14px 8px;
+.sheet-signals {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 7px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
 }
+.sheet-signal { font-size: 13px; color: var(--text2); line-height: 1.4; }
 
-.signals-list li {
-  font-size: 13px;
-  color: var(--text2);
-  line-height: 1.4;
-}
-
-.rating-grid {
+.sheet-ratings {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
-  padding: 0 14px 14px;
 }
 
 .rating-btn {
@@ -677,14 +700,13 @@ input:focus, textarea:focus { border-color: var(--accent); }
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   color: var(--text2);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
-  padding: 10px 8px;
+  padding: 12px 8px;
   cursor: pointer;
   font-family: inherit;
   transition: all 0.15s;
 }
-
 .rating-btn.active { font-weight: 700; }
 .rating-btn:active { opacity: 0.7; }
 
