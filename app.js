@@ -616,6 +616,45 @@ function buildInsightCard(avgs, criteria) {
   return rows.length ? `<div class="insight-card">${rows.join('')}</div>` : '';
 }
 
+function buildSparkline(sessions, subjectId) {
+  const scored = sessions.map(s => {
+    const vals = CRITERIA[subjectId]
+      .filter(c => s.ratings[c.id])
+      .map(c => RATINGS.indexOf(s.ratings[c.id]));
+    return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+  }).filter(v => v !== null);
+
+  if (scored.length < 3) return '';
+
+  const W = 300, H = 56, PAD = 6;
+  const xStep = (W - PAD * 2) / (scored.length - 1);
+  const pts = scored.map((v, i) => ({
+    x: PAD + i * xStep,
+    y: H - PAD - (v / 3) * (H - PAD * 2),
+  }));
+  const polyline = pts.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+  const fill     = `${PAD},${H} ${polyline} ${W - PAD},${H}`;
+  const delta    = scored[scored.length - 1] - scored[0];
+  const color    = delta > 0.3 ? '#30d158' : delta < -0.3 ? '#ff453a' : '#ffd60a';
+  const lastPt   = pts[pts.length - 1];
+
+  return `
+    <div class="sparkline-wrap">
+      <div class="sparkline-label">Score trend · ${scored.length} sessions</div>
+      <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" class="sparkline-svg" aria-hidden="true">
+        <defs>
+          <linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="${color}" stop-opacity="0.25"/>
+            <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <polygon points="${fill}" fill="url(#sg)"/>
+        <polyline points="${polyline}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="${lastPt.x.toFixed(1)}" cy="${lastPt.y.toFixed(1)}" r="3.5" fill="${color}"/>
+      </svg>
+    </div>`;
+}
+
 function filterRow(filter) {
   return `<div class="filter-row">
     ${[['12h','12h'],['today','Today'],['week','Week'],['month','Month'],['all','All']].map(([f, lbl]) =>
@@ -727,6 +766,7 @@ function viewHistoryDetail(data) {
             <span class="dash-label">overall</span>
           </div>` : ''}
         </div>
+        ${buildSparkline(filtered, tab)}
         ${buildInsightCard(avgs, criteria)}
         <div class="area-bars">
           ${criteria.map(c => {
