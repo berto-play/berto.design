@@ -257,7 +257,10 @@ function filterSessions(sessions, subjectId, filter) {
   const now      = new Date();
   const todayStr = now.toISOString().split('T')[0];
   let filtered   = sessions.filter(s => s.subject === subjectId);
-  if (filter === 'today') {
+  if (filter === '12h') {
+    const cutoff = new Date(now - 12 * 3600000).getTime();
+    filtered = filtered.filter(s => parseInt(s.id) >= cutoff);
+  } else if (filter === 'today') {
     filtered = filtered.filter(s => s.date === todayStr);
   } else if (filter === 'week') {
     const cutoff = new Date(now - 7 * 86400000).toISOString().split('T')[0];
@@ -612,9 +615,9 @@ function viewHistory(data) {
       </div>
 
       <div class="filter-row">
-        ${['today','week','month','all'].map(f => `
+        ${[['12h','12h'],['today','Today'],['week','Week'],['month','Month'],['all','All']].map(([f, label]) => `
           <button class="filter-btn${filter === f ? ' active' : ''}" onclick="switchHistFilter('${f}')">
-            ${f.charAt(0).toUpperCase() + f.slice(1)}
+            ${label}
           </button>`).join('')}
       </div>
 
