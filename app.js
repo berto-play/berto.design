@@ -414,6 +414,7 @@ function viewHome(data) {
         <button class="nav-btn active">Home</button>
         <button class="nav-btn" onclick="goHistory()">History</button>
         <button class="nav-btn" onclick="goReport()">Report</button>
+        <button class="nav-btn" onclick="goSettings()">Settings</button>
       </nav>
     </div>
   `);
@@ -531,6 +532,7 @@ function viewHistory(data) {
         <button class="nav-btn" onclick="goHome()">Home</button>
         <button class="nav-btn active">History</button>
         <button class="nav-btn" onclick="goReport()">Report</button>
+        <button class="nav-btn" onclick="goSettings()">Settings</button>
       </nav>
     </div>
   `);
@@ -573,6 +575,7 @@ function viewReport(data) {
         <button class="nav-btn" onclick="goHome()">Home</button>
         <button class="nav-btn" onclick="goHistory()">History</button>
         <button class="nav-btn active">Report</button>
+        <button class="nav-btn" onclick="goSettings()">Settings</button>
       </nav>
     </div>
   `);
@@ -722,11 +725,47 @@ function doDownload() {
   downloadReport(text, state.reportTab);
 }
 
+function viewSettings() {
+  const labels = getLabels();
+  render(`
+    <div class="screen setup">
+      <div class="screen-header">
+        <button class="back-btn" onclick="goHome()">←</button>
+        <span>Settings</span>
+      </div>
+      <div class="form">
+        <div class="form-divider">Code names</div>
+        <p class="field-hint">Update the code names for each subject. Session data is not affected.</p>
+        ${SUBJECTS.map(s => `
+          <label>${s.role}</label>
+          <input type="text" id="label_${s.id}"
+            value="${esc(labels[s.id] || defaultCodeName(s.id))}"
+            autocomplete="off" spellcheck="false">
+        `).join('')}
+        <p id="settings-msg" class="hidden" style="color:var(--green);font-size:14px;margin-top:8px">Saved.</p>
+        <button class="btn-primary" onclick="saveSettings()">Save code names</button>
+      </div>
+    </div>
+  `);
+}
+
+function saveSettings() {
+  const labels = {};
+  SUBJECTS.forEach(s => {
+    const val = document.getElementById('label_' + s.id)?.value.trim();
+    labels[s.id] = val || defaultCodeName(s.id);
+  });
+  localStorage.setItem('labels', JSON.stringify(labels));
+  const msg = document.getElementById('settings-msg');
+  if (msg) { msg.classList.remove('hidden'); setTimeout(() => msg.classList.add('hidden'), 1500); }
+}
+
 // ── Router ────────────────────────────────────────────────────────────────────
 
-function goHome()    { state.view = 'home';    viewHome(state.data); }
-function goHistory() { state.view = 'history'; viewHistory(state.data); }
-function goReport()  { state.view = 'report';  viewReport(state.data); }
+function goHome()     { state.view = 'home';     viewHome(state.data); }
+function goHistory()  { state.view = 'history';  viewHistory(state.data); }
+function goReport()   { state.view = 'report';   viewReport(state.data); }
+function goSettings() { state.view = 'settings'; viewSettings(); }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 
