@@ -1,6 +1,6 @@
-# Medicilio Design Tokens — Layer 0
+# MD Design Tokens — Layer 0
 
-Token foundation for the Medicilio Design System. This is the single source of truth for color, typography, spacing, radius, elevation, and motion. Everything else in the system consumes these tokens. Nothing here is component-specific.
+Token foundation for the MD Design System. This is the single source of truth for color, typography, spacing, radius, elevation, and motion. Everything else in the system consumes these tokens. Nothing here is component-specific.
 
 ---
 
@@ -30,7 +30,7 @@ Never use hex values, library-specific names, or component-specific names as tok
 | Web      | `build/css/variables.css`       | CSS custom properties    |
 | Android  | `build/android/colors.xml`      | Android XML color values |
 |          | `build/android/dimens.xml`      | Android XML dimensions   |
-| iOS      | `build/ios/MedicilioTokens.swift` | Swift class             |
+| iOS      | `build/ios/MDTokens.swift` | Swift class             |
 
 ---
 
@@ -70,7 +70,7 @@ tokens/
 The engineering theme layer maps these tokens to whichever component library is in use (Ant Design, MUI, Kitten). When the library changes, only the theme mapping layer changes — these token files are untouched.
 
 ```
-Medicilio tokens  →  Theme mapping layer  →  Ant Design / MUI / Kitten
+MD tokens  →  Theme mapping layer  →  Ant Design / MUI / Kitten
 ```
 
 CSS output is consumed directly by web without a library. iOS and Android outputs are consumed by platform-native apps.

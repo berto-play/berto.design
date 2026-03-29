@@ -1,7 +1,7 @@
 {
-  "name": "medicilio-design-tokens",
+  "name": "md-design-tokens",
   "version": "0.1.0",
-  "description": "Medicilio design token foundation — Layer 0 of the Medicilio Design System",
+  "description": "MD design token foundation — Layer 0 of the MD Design System",
   "scripts": {
     "build": "style-dictionary build --config style-dictionary.config.js",
     "build:css": "style-dictionary build --config style-dictionary.config.js --platform css",
