@@ -105,7 +105,7 @@ const CRITERIA = {
   ],
 };
 
-// ── Memo (Eagle's brief) ──────────────────────────────────────────────────────
+// ── Memo ─────────────────────────────────────────────────────────────────────
 
 const MEMO_CONTENT = {
   rules: [
@@ -115,7 +115,7 @@ const MEMO_CONTENT = {
     'Challenge the thinking. Use your experience to question the approach. Name when something does not make sense before committing to design.',
     'DR verdict. Have a clear read. Give direct, honest feedback without softening it. Be ready to say growing or not.',
     'Speed above all. Move fast. Do not let process slow the work.',
-    'Healthcare domain questions do not go to Eagle. Route to the right expert. Only pull leadership in for decisions, not context.',
+    'Healthcare domain questions: route to the right expert. Only pull leadership in for decisions, not context.',
   ],
   communication: [
     'Thinks out loud — keep up.',
@@ -164,7 +164,7 @@ function ghHeaders() {
     'Accept': 'application/vnd.github.v3+json',
   };
 }
-function ghRepo() { return localStorage.getItem('gh_repo') || 'berto-play/berto-log-data'; }
+function ghRepo() { return localStorage.getItem('gh_repo') || ''; }
 
 async function ghRead() {
   const res = await fetch(`https://api.github.com/repos/${ghRepo()}/contents/data.json`, { headers: ghHeaders() });
@@ -431,7 +431,7 @@ function viewSetup() {
         <input type="password" id="gh_token" placeholder="ghp_… (leave blank to skip)" autocomplete="off"
           onblur="prefillFromGitHub()">
         <label>Data repo</label>
-        <input type="text" id="gh_repo" value="berto-play/berto-log-data" autocomplete="off" spellcheck="false"
+        <input type="text" id="gh_repo" value="" autocomplete="off" spellcheck="false"
           onblur="prefillFromGitHub()">
         <p id="restore-hint" class="field-hint success-hint hidden"></p>
 
@@ -456,7 +456,7 @@ function viewSetup() {
 }
 
 function defaultCodeName(id) {
-  return { dr: 'Alpha', me: 'Self', pm: 'Charlie', boss: 'Eagle' }[id] || id;
+  return { dr: 'Alpha', me: 'Self', pm: 'Charlie', boss: 'Boss' }[id] || id;
 }
 
 async function prefillFromGitHub() {
@@ -1201,7 +1201,7 @@ function stopSpeak() {
 function viewSettings() {
   const labels    = getLabels();
   const connected = !isLocalMode();
-  const repo      = localStorage.getItem('gh_repo') || 'berto-play/berto-log-data';
+  const repo      = localStorage.getItem('gh_repo') || '';
 
   render(`
     <div class="screen setup">
@@ -1237,7 +1237,7 @@ function viewSettings() {
           <label>Personal access token</label>
           <input type="password" id="settings_token" placeholder="ghp_…" autocomplete="off">
           <label>Data repo (owner/name)</label>
-          <input type="text" id="settings_repo" value="berto-play/berto-log-data" autocomplete="off" spellcheck="false">
+          <input type="text" id="settings_repo" value="" autocomplete="off" spellcheck="false">
         `}
 
         <p id="settings-msg" class="hidden" style="color:var(--green);font-size:14px;margin-top:8px">Saved.</p>

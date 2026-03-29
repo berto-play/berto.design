@@ -6,8 +6,8 @@ A mobile-first PWA for a design lead to log daily observations across four relat
 ---
 
 ## Deployment
-- **App code**: public repo (`berto-play/berto.design`) — no PII
-- **Data**: private repo (`berto-play/berto-log-data`) — synced via GitHub API
+- **App code**: public repo (`your-org/berto.design`) — no PII
+- **Data**: private repo (`your-org/log-data`) — synced via GitHub API
 - **Hosting**: GitHub Pages
 - **Access**: PIN-protected on every device
 

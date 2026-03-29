@@ -165,13 +165,13 @@ All four subjects are referenced by code names you choose at setup. These are:
 - Synced to your **private** GitHub repo inside `data.json`
 - Never present in the public source code
 
-The app source code (`berto-play/berto.design`) is public. The data repo (`berto-play/berto-log-data`) is private. No real names appear anywhere in the public repo.
+The app source code (`your-org/berto.design`) is public. The data repo (`your-org/log-data`) is private. No real names appear anywhere in the public repo.
 
 ---
 
 ## Deployment
 
-Hosted on **GitHub Pages** from the `main` branch of `berto-play/berto.design`. No build process — the files are served as-is.
+Hosted on **GitHub Pages** from the `main` branch of `your-org/berto.design`. No build process — the files are served as-is.
 
 To deploy a change:
 1. Edit `app.js` / `style.css`
@@ -192,6 +192,6 @@ berto.design/          ← public repo (GitHub Pages)
 ├── manifest.json      ← PWA manifest
 └── icon.svg           ← app icon
 
-berto-log-data/        ← private repo (data only)
+log-data/              ← private repo (data only)
 └── data.json          ← sessions + labels
 ```
