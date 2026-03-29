@@ -1,0 +1,14 @@
+{
+  "name": "medicilio-design-tokens",
+  "version": "0.1.0",
+  "description": "Medicilio design token foundation — Layer 0 of the Medicilio Design System",
+  "scripts": {
+    "build": "style-dictionary build --config style-dictionary.config.js",
+    "build:css": "style-dictionary build --config style-dictionary.config.js --platform css",
+    "build:android": "style-dictionary build --config style-dictionary.config.js --platform android",
+    "build:ios": "style-dictionary build --config style-dictionary.config.js --platform ios"
+  },
+  "devDependencies": {
+    "style-dictionary": "^3.9.2"
+  }
+}

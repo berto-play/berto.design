@@ -1,0 +1,51 @@
+{
+  "radius": {
+    "none": {
+      "value": "0px",
+      "type": "borderRadius"
+    },
+    "sm": {
+      "value": "4px",
+      "type": "borderRadius"
+    },
+    "md": {
+      "value": "8px",
+      "type": "borderRadius",
+      "comment": "Default interactive elements — tags, badges, small chips."
+    },
+    "lg": {
+      "value": "12px",
+      "type": "borderRadius"
+    },
+    "card": {
+      "value": "12px",
+      "type": "borderRadius",
+      "comment": "Patient cards, data panels, summary tiles."
+    },
+    "input": {
+      "value": "8px",
+      "type": "borderRadius",
+      "comment": "Text fields, selects, date pickers."
+    },
+    "button": {
+      "value": "8px",
+      "type": "borderRadius",
+      "comment": "All button variants. Use pill for mobile floating actions."
+    },
+    "modal": {
+      "value": "16px",
+      "type": "borderRadius",
+      "comment": "Modals and drawers."
+    },
+    "pill": {
+      "value": "999px",
+      "type": "borderRadius",
+      "comment": "Status badges, filter chips, mobile action buttons."
+    },
+    "full": {
+      "value": "50%",
+      "type": "borderRadius",
+      "comment": "Avatars, circular icon buttons."
+    }
+  }
+}

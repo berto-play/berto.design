@@ -1,0 +1,189 @@
+{
+  "color": {
+    "brand": {
+      "primary": {
+        "value": "#1A6FBF",
+        "type": "color",
+        "comment": "Medicilio primary brand blue. Pending rebranding confirmation."
+      },
+      "primary-subtle": {
+        "value": "#EAF2FB",
+        "type": "color"
+      },
+      "secondary": {
+        "value": "#0D9488",
+        "type": "color",
+        "comment": "Supporting teal. Pending rebranding confirmation."
+      },
+      "secondary-subtle": {
+        "value": "#E6F7F6",
+        "type": "color"
+      }
+    },
+    "interactive": {
+      "primary": {
+        "value": "{color.brand.primary.value}",
+        "type": "color",
+        "comment": "Primary CTA — buttons, links, active states."
+      },
+      "primary-hover": {
+        "value": "#155A99",
+        "type": "color"
+      },
+      "primary-pressed": {
+        "value": "#104880",
+        "type": "color"
+      },
+      "secondary": {
+        "value": "#FFFFFF",
+        "type": "color",
+        "comment": "Secondary CTA background (outlined/ghost)."
+      },
+      "secondary-border": {
+        "value": "{color.brand.primary.value}",
+        "type": "color"
+      },
+      "disabled": {
+        "value": "#C7C7CC",
+        "type": "color"
+      },
+      "disabled-text": {
+        "value": "#8E8E93",
+        "type": "color"
+      },
+      "focus-ring": {
+        "value": "#5BA3D9",
+        "type": "color"
+      }
+    },
+    "feedback": {
+      "success": {
+        "value": "#16A34A",
+        "type": "color"
+      },
+      "success-subtle": {
+        "value": "#DCFCE7",
+        "type": "color"
+      },
+      "warning": {
+        "value": "#D97706",
+        "type": "color"
+      },
+      "warning-subtle": {
+        "value": "#FEF3C7",
+        "type": "color"
+      },
+      "error": {
+        "value": "#DC2626",
+        "type": "color"
+      },
+      "error-subtle": {
+        "value": "#FEE2E2",
+        "type": "color"
+      },
+      "info": {
+        "value": "{color.brand.primary.value}",
+        "type": "color"
+      },
+      "info-subtle": {
+        "value": "{color.brand.primary-subtle.value}",
+        "type": "color"
+      }
+    },
+    "surface": {
+      "default": {
+        "value": "#FFFFFF",
+        "type": "color"
+      },
+      "subtle": {
+        "value": "#F5F5F7",
+        "type": "color",
+        "comment": "Page background, table row striping."
+      },
+      "elevated": {
+        "value": "#FFFFFF",
+        "type": "color",
+        "comment": "Cards and panels sitting above the page background."
+      },
+      "overlay": {
+        "value": "rgba(0, 0, 0, 0.45)",
+        "type": "color",
+        "comment": "Modal and drawer backdrop."
+      },
+      "inverse": {
+        "value": "#1C1C1E",
+        "type": "color"
+      }
+    },
+    "text": {
+      "primary": {
+        "value": "#1C1C1E",
+        "type": "color"
+      },
+      "secondary": {
+        "value": "#636366",
+        "type": "color"
+      },
+      "tertiary": {
+        "value": "#8E8E93",
+        "type": "color"
+      },
+      "disabled": {
+        "value": "#C7C7CC",
+        "type": "color"
+      },
+      "inverse": {
+        "value": "#FFFFFF",
+        "type": "color"
+      },
+      "link": {
+        "value": "{color.interactive.primary.value}",
+        "type": "color"
+      },
+      "error": {
+        "value": "{color.feedback.error.value}",
+        "type": "color"
+      }
+    },
+    "border": {
+      "default": {
+        "value": "#D1D1D6",
+        "type": "color"
+      },
+      "strong": {
+        "value": "#8E8E93",
+        "type": "color"
+      },
+      "focus": {
+        "value": "{color.interactive.focus-ring.value}",
+        "type": "color"
+      },
+      "error": {
+        "value": "{color.feedback.error.value}",
+        "type": "color"
+      }
+    },
+    "clinical": {
+      "critical": {
+        "value": "#DC2626",
+        "type": "color",
+        "comment": "Threshold exceeded, alert severity: critical."
+      },
+      "warning": {
+        "value": "#D97706",
+        "type": "color",
+        "comment": "Near-threshold, alert severity: warning."
+      },
+      "normal": {
+        "value": "#16A34A",
+        "type": "color",
+        "comment": "Within normal range."
+      },
+      "inactive": {
+        "value": "#8E8E93",
+        "type": "color",
+        "comment": "Device offline, no recent readings."
+      }
+    }
+  }
+}

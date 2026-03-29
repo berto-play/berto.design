@@ -1,0 +1,121 @@
+{
+  "font": {
+    "family": {
+      "sans": {
+        "value": "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+        "type": "fontFamilies",
+        "comment": "System font stack. Update if a brand typeface is confirmed post-rebranding."
+      },
+      "mono": {
+        "value": "'SF Mono', 'Fira Code', 'Fira Mono', 'Roboto Mono', monospace",
+        "type": "fontFamilies",
+        "comment": "Used for measurement values, device IDs, and code."
+      }
+    },
+    "weight": {
+      "regular": {
+        "value": "400",
+        "type": "fontWeights"
+      },
+      "medium": {
+        "value": "500",
+        "type": "fontWeights"
+      },
+      "semibold": {
+        "value": "600",
+        "type": "fontWeights"
+      },
+      "bold": {
+        "value": "700",
+        "type": "fontWeights"
+      }
+    },
+    "size": {
+      "display": {
+        "value": "36px",
+        "type": "fontSizes",
+        "comment": "Landing pages, large hero text."
+      },
+      "heading-xl": {
+        "value": "28px",
+        "type": "fontSizes"
+      },
+      "heading-lg": {
+        "value": "24px",
+        "type": "fontSizes"
+      },
+      "heading-md": {
+        "value": "20px",
+        "type": "fontSizes"
+      },
+      "heading-sm": {
+        "value": "17px",
+        "type": "fontSizes"
+      },
+      "body-lg": {
+        "value": "17px",
+        "type": "fontSizes"
+      },
+      "body-md": {
+        "value": "15px",
+        "type": "fontSizes",
+        "comment": "Default body text."
+      },
+      "body-sm": {
+        "value": "13px",
+        "type": "fontSizes"
+      },
+      "label-lg": {
+        "value": "15px",
+        "type": "fontSizes"
+      },
+      "label-md": {
+        "value": "13px",
+        "type": "fontSizes",
+        "comment": "Form labels, table headers."
+      },
+      "label-sm": {
+        "value": "12px",
+        "type": "fontSizes"
+      },
+      "caption": {
+        "value": "11px",
+        "type": "fontSizes",
+        "comment": "Supporting text, timestamps, metadata."
+      }
+    },
+    "line-height": {
+      "tight": {
+        "value": "1.2",
+        "type": "lineHeights",
+        "comment": "Headings."
+      },
+      "normal": {
+        "value": "1.5",
+        "type": "lineHeights",
+        "comment": "Body text default."
+      },
+      "relaxed": {
+        "value": "1.75",
+        "type": "lineHeights",
+        "comment": "Long-form content, guidelines."
+      }
+    },
+    "letter-spacing": {
+      "tight": {
+        "value": "-0.02em",
+        "type": "letterSpacing",
+        "comment": "Large headings."
+      },
+      "normal": {
+        "value": "0",
+        "type": "letterSpacing"
+      },
+      "wide": {
+        "value": "0.04em",
+        "type": "letterSpacing",
+        "comment": "Uppercase labels, badges."
+      }
+    }
+  }
+}
